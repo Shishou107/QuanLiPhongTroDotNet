@@ -1,0 +1,6 @@
+@ApiQuanLyPhongTro_HostAddress = http://localhost:5268
+
+GET {{ApiQuanLyPhongTro_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
