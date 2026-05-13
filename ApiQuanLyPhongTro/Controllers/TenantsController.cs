@@ -47,6 +47,7 @@ public class TenantsController : ControllerBase
                 Address = reader.GetNullableStringValue("Address"),
                 CurrentRoom = reader.GetNullableStringValue("CurrentRoom"),
                 CurrentBuilding = reader.GetNullableStringValue("CurrentBuilding"),
+                TenantStatus = reader.GetIntValue("TenantStatus"),
                 StatusText = reader.GetStringValue("StatusText")
             });
         }

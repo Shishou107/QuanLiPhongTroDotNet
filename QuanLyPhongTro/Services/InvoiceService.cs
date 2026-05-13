@@ -11,9 +11,9 @@ public class InvoiceService
         _apiService = apiService;
     }
 
-    public async Task<PaginationResult<InvoiceListViewModel>> GetAllAsync(int? month = null, int? year = null, int? status = null, int page = 1, int pageSize = 10)
+    public async Task<PaginationResult<InvoiceListViewModel>> GetAllAsync(int? month = null, int? year = null, int? status = null, string? keyword = null, int page = 1, int pageSize = 10)
     {
-        var response = await _apiService.GetAsync<PaginationResult<InvoiceListViewModel>>($"invoices?month={month}&year={year}&status={status}&page={page}&pageSize={pageSize}");
+        var response = await _apiService.GetAsync<PaginationResult<InvoiceListViewModel>>($"invoices?month={month}&year={year}&status={status}&keyword={keyword}&page={page}&pageSize={pageSize}");
         return response?.Data ?? new PaginationResult<InvoiceListViewModel>();
     }
 

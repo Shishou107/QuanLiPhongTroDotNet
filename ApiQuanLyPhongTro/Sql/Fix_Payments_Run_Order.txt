@@ -1,0 +1,10 @@
+Chay trong database Data_Base_Phontro theo dung thu tu:
+
+1. Fix_Payments_01_AddDetail.sql
+2. Fix_Payments_02_Recalculate.sql
+3. Fix_Payments_03_CreatePayment.sql
+4. Fix_Payments_04_Trigger.sql
+5. Fix_Payments_05_RecalculateData.sql
+
+Moi file nen bam Execute rieng mot lan.
+Khong chay lai file Fix_Payments_Update_Invoice.sql neu cong cu Somee/SSMS cua ban bao loi quotation.

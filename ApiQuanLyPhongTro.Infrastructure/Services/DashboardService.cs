@@ -27,8 +27,13 @@ public class DashboardService : IDashboardService
         var maintenanceRooms = await _context.Rooms.CountAsync(r => r.Status == 2);
         var totalTenants = await _context.Tenants.CountAsync();
         var activeContracts = await _context.Contracts.CountAsync(c => c.Status == 1);
-        var unpaidInvoices = await _context.Invoices.CountAsync(i => i.Status == 0 || i.Status == 1);
-        var overdueInvoices = await _context.Invoices.CountAsync(i => i.Status == 3);
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var unpaidInvoices = await _context.Invoices.CountAsync(i => 
+            !(i.PaidAmount >= i.TotalAmount && i.TotalAmount > 0) &&
+            !(i.DueDate < today && i.TotalAmount > i.PaidAmount));
+        
+        var overdueInvoices = await _context.Invoices.CountAsync(i => 
+            i.DueDate < today && i.TotalAmount > i.PaidAmount);
         
         var totalPaidAmount = await _context.Invoices.SumAsync(i => i.PaidAmount) ?? 0;
 

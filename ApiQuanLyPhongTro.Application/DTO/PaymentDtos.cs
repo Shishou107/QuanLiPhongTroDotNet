@@ -19,7 +19,7 @@ public class CreatePaymentDto
 {
     public Guid InvoiceId { get; set; }
     public decimal Amount { get; set; }
-    public string Method { get; set; } = "Cash"; // Cash, BankTransfer, Momo, ZaloPay
+    public string Method { get; set; } = "1"; // "1" for Cash, "2" for Transfer (matching DB codes)
     public DateTime? PaymentDate { get; set; }
     public string? Note { get; set; }
 }

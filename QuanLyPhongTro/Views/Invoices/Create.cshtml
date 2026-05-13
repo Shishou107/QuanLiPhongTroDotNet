@@ -1,22 +1,22 @@
 @model QuanLyPhongTro.Models.ViewModels.InvoiceCreateViewModel
 @{
-    ViewData["Title"] = "Lap hoa don";
+    ViewData["Title"] = "Lập hóa đơn";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Lap hoa don</h4>
-    <a asp-action="Index" class="btn btn-outline-secondary">Quay lai</a>
+    <h4 class="mb-0">Lập hóa đơn</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
 </div>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <form asp-action="Create" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label asp-for="ContractId" class="form-label"></label>
                     <select asp-for="ContractId" asp-items="ViewBag.Contracts" class="form-select">
-                        <option value="">Chon hop dong</option>
+                        <option value="">Chọn hợp đồng</option>
                     </select>
                     <span asp-validation-for="ContractId" class="text-danger"></span>
                 </div>
@@ -32,34 +32,178 @@
                 </div>
                 <div class="col-md-6 mb-3">
                     <label asp-for="DueDate" class="form-label"></label>
-                    <input asp-for="DueDate" class="form-control" type="date" />
+                    <input asp-for="DueDate" class="form-control bg-light" type="date" readonly />
                     <span asp-validation-for="DueDate" class="text-danger"></span>
+                    <small class="text-muted">Hạn thanh toán được cố định là ngày 10 tháng sau.</small>
                 </div>
             </div>
 
-            <h6 class="mt-3">Chi tiet dich vu</h6>
-            <div class="row align-items-end">
-                <div class="col-md-5 mb-3">
-                    <label class="form-label">Dich vu</label>
-                    <select asp-for="Details[0].ServiceId" asp-items="ViewBag.Services" class="form-select">
-                        <option value="">Chon dich vu</option>
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">So luong</label>
-                    <input asp-for="Details[0].Quantity" class="form-control" type="number" min="0" step="0.01" />
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Don gia</label>
-                    <input asp-for="Details[0].UnitPrice" class="form-control" type="number" min="0" step="1000" />
-                </div>
+            <h6 class="mt-4">Chi tiết dịch vụ (Nhập số lượng > 0 để tính phí)</h6>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 30%">Dịch vụ</th>
+                            <th style="width: 20%">Đơn giá</th>
+                            <th style="width: 20%">Số lượng</th>
+                            <th style="width: 30%">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Details.Count; i++)
+                        {
+                            <tr class="invoice-detail-row">
+                                <td>
+                                    <strong>@Model.Details[i].ServiceName</strong>
+                                    <input type="hidden" asp-for="Details[i].ServiceId" />
+                                    <input type="hidden" asp-for="Details[i].ServiceName" />
+                                </td>
+                                <td>
+                                    <input asp-for="Details[i].UnitPrice" class="form-control form-control-sm unit-price-input" type="number" readonly />
+                                </td>
+                                <td>
+                                    <input asp-for="Details[i].Quantity" class="form-control form-control-sm quantity-input" type="number" min="0" step="1" />
+                                </td>
+                                <td>
+                                    <input class="form-control form-control-sm line-total bg-light" type="text" value="0" readonly />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-info fw-bold">
+                            <td colspan="3" class="text-end">Tổng cộng:</td>
+                            <td id="grand-total">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
 
-            <button type="submit" class="btn btn-primary">Luu</button>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="fas fa-save me-2"></i>Lưu hóa đơn
+                </button>
+            </div>
         </form>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const formatMoney = value => Number(value || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+
+        function updateTotals() {
+            let grandTotal = 0;
+            document.querySelectorAll('.invoice-detail-row').forEach(row => {
+                const quantity = Number(row.querySelector('.quantity-input').value || 0);
+                const unitPrice = Number(row.querySelector('.unit-price-input').value || 0);
+                const total = quantity * unitPrice;
+                row.querySelector('.line-total').value = formatMoney(total);
+                grandTotal += total;
+            });
+            document.getElementById('grand-total').textContent = formatMoney(grandTotal);
+        }
+
+        function updateDueDate() {
+            const month = parseInt(document.getElementById('BillingMonth').value);
+            const year = parseInt(document.getElementById('BillingYear').value);
+            
+            if (month && year) {
+                let nextMonth = month + 1;
+                let nextYear = year;
+                if (nextMonth > 12) {
+                    nextMonth = 1;
+                    nextYear++;
+                }
+                
+                const dueDateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-10`;
+                document.getElementById('DueDate').value = dueDateStr;
+            }
+        }
+
+        function normalizeText(value) {
+            return (value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'D')
+                .toLowerCase();
+        }
+
+        async function updateRentPrice() {
+            const contractId = document.getElementById('ContractId').value;
+            if (!contractId) return;
+
+            try {
+                const response = await fetch(`/Invoices/GetContractDetails/${contractId}`);
+                const data = await response.json();
+                
+                if (data && data.rentPrice) {
+                    // Find the row for "Tiền thuê phòng" or "Tiền nhà"
+                    document.querySelectorAll('.invoice-detail-row').forEach(row => {
+                        const serviceName = normalizeText(row.querySelector('input[type="hidden"][name$="ServiceName"]').value);
+                        const isRentService = serviceName.includes('tien thue phong') ||
+                            serviceName.includes('tien nha') ||
+                            serviceName.includes('tien phong') ||
+                            serviceName.includes('thue phong');
+                        if (isRentService) {
+                            const priceInput = row.querySelector('.unit-price-input');
+                            priceInput.value = data.rentPrice;
+
+                            const quantityInput = row.querySelector('.quantity-input');
+                            if (Number(quantityInput.value) === 0) {
+                                quantityInput.value = 1;
+                            }
+                            return;
+                        }
+                        if (serviceName.toLowerCase().includes('tiền thuê phòng') || 
+                            serviceName.toLowerCase().includes('tiền nhà') ||
+                            serviceName.toLowerCase().includes('tiền phòng')) {
+                            
+                            const priceInput = row.querySelector('.unit-price-input');
+                            priceInput.value = data.rentPrice;
+                            
+                            const quantityInput = row.querySelector('.quantity-input');
+                            if (Number(quantityInput.value) === 0) {
+                                quantityInput.value = 1; // Auto set quantity to 1 for rent
+                            }
+                        }
+                    });
+                    updateTotals();
+                }
+            } catch (error) {
+                console.error('Error fetching contract details:', error);
+            }
+        }
+
+        document.getElementById('BillingMonth').addEventListener('change', updateDueDate);
+        document.getElementById('BillingYear').addEventListener('change', updateDueDate);
+        document.getElementById('ContractId').addEventListener('change', updateRentPrice);
+
+        document.querySelectorAll('.quantity-input, .unit-price-input').forEach(input => {
+            input.addEventListener('input', updateTotals);
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') e.preventDefault();
+            });
+        });
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const quantities = Array.from(document.querySelectorAll('.quantity-input'))
+                                    .map(input => Number(input.value || 0));
+            const hasQuantity = quantities.some(q => q > 0);
+
+            if (!hasQuantity) {
+                e.preventDefault();
+                alert('Vui lòng nhập số lượng cho ít nhất một dịch vụ trước khi lưu!');
+            }
+        });
+
+        // Initialize
+        updateTotals();
+        updateDueDate();
+        if (document.getElementById('ContractId').value) {
+            updateRentPrice();
+        }
+    </script>
 }

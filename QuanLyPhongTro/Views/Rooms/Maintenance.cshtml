@@ -5,20 +5,41 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0"><i class="fas fa-tools me-2 text-warning"></i>Phòng đang bảo trì</h4>
-    <span class="badge bg-warning text-dark px-3 py-2">@Model.Count() phòng</span>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-action="Maintenance" method="get" class="row g-3">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" name="keyword" class="form-control border-start-0" placeholder="Tìm số phòng..." value="@ViewBag.Keyword">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="buildingId" class="form-select" asp-items="ViewBag.Buildings">
+                    <option value="">-- Tất cả tòa nhà --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary px-4">Lọc</button>
+                <a asp-action="Maintenance" class="btn btn-outline-secondary px-3">Xóa bộ lọc</a>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-body">
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Số phòng</th>
+                        <th class="ps-4">Số phòng</th>
                         <th>Tòa nhà</th>
                         <th>Diện tích</th>
                         <th>Giá thuê</th>
-                        <th class="text-end">Hành động</th>
+                        <th class="text-end pe-4">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,11 +56,11 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td><span class="fw-bold">@item.RoomNumber</span></td>
+                            <td class="ps-4"><span class="fw-bold">@item.RoomNumber</span></td>
                             <td>@item.BuildingName</td>
                             <td>@(item.Area?.ToString("N1") ?? "0") m²</td>
                             <td class="fw-bold text-primary">@item.RentPrice.ToString("N0") ₫</td>
-                            <td class="text-end">
+                            <td class="text-end pe-4">
                                 <div class="btn-group">
                                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info"><i class="fas fa-eye me-1"></i>Xem</a>
                                     <form asp-action="UpdateStatus" asp-route-id="@item.Id" method="post" class="d-inline ms-1">
@@ -53,5 +74,34 @@
                 </tbody>
             </table>
         </div>
+
+        @if (ViewBag.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center my-4 gap-2">
+                @if (ViewBag.CurrentPage > 1)
+                {
+                    <a asp-action="Maintenance" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-keyword="@ViewBag.Keyword" asp-route-buildingId="@ViewBag.BuildingId" class="rounded-circle btn btn-primary px-3 py-2">&laquo;</a>
+                }
+
+                @{
+                    int startPage = Math.Max(1, ViewBag.CurrentPage - 1);
+                    int endPage = Math.Min(ViewBag.TotalPages, startPage + 2);
+                    if (endPage - startPage < 2 && startPage > 1)
+                    {
+                        startPage = Math.Max(1, endPage - 2);
+                    }
+                }
+
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    <a asp-action="Maintenance" asp-route-page="@i" asp-route-keyword="@ViewBag.Keyword" asp-route-buildingId="@ViewBag.BuildingId" class="rounded-circle btn @(ViewBag.CurrentPage == i ? "btn-primary active" : "btn-outline-primary") px-3 py-2">@i</a>
+                }
+
+                @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                {
+                    <a asp-action="Maintenance" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-keyword="@ViewBag.Keyword" asp-route-buildingId="@ViewBag.BuildingId" class="rounded-circle btn btn-primary px-3 py-2">&raquo;</a>
+                }
+            </div>
+        }
     </div>
 </div>

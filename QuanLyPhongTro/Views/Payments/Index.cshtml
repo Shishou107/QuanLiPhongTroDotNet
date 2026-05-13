@@ -8,6 +8,37 @@
     <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Ghi nhận thanh toán</a>
 </div>
 
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Tìm kiếm</label>
+                <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control" placeholder="Tên khách, mã hóa đơn...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Từ ngày</label>
+                <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Đến ngày</label>
+                <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Hình thức</label>
+                <select name="method" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="1" selected="@(ViewBag.Method == "1")">Chuyển khoản</option>
+                    <option value="2" selected="@(ViewBag.Method == "2")">Tiền mặt</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary px-4"><i class="fas fa-search me-1"></i> Lọc</button>
+                <a asp-action="Index" class="btn btn-outline-secondary px-3">Xóa</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -43,7 +74,7 @@
                                 <div class="small text-muted">Phòng: @item.RoomNumber</div>
                             </td>
                             <td class="text-success fw-bold">+ @item.Amount.ToString("N0") ₫</td>
-                             <td>
+                            <td>
                                 <span class="badge bg-light text-dark border">
                                     @if (item.Method == "1") { <span>Chuyển khoản</span> }
                                     else if (item.Method == "2") { <span>Tiền mặt</span> }

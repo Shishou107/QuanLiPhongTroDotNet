@@ -15,7 +15,7 @@ public class InvoiceListViewModel
     public string BuildingName { get; set; } = null!;
     public decimal TotalAmount { get; set; }
     public decimal PaidAmount { get; set; }
-    public decimal DebtAmount => TotalAmount - PaidAmount;
+    public decimal DebtAmount => TotalAmount > PaidAmount ? TotalAmount - PaidAmount : 0;
     public DateOnly? DueDate { get; set; }
     public int Status { get; set; }
 }
@@ -34,7 +34,7 @@ public class InvoiceDetailViewModel
     public List<PaymentListViewModel> Payments { get; set; } = new();
     public decimal TotalAmount { get; set; }
     public decimal PaidAmount { get; set; }
-    public decimal DebtAmount => TotalAmount - PaidAmount;
+    public decimal DebtAmount => TotalAmount > PaidAmount ? TotalAmount - PaidAmount : 0;
     public DateOnly? DueDate { get; set; }
     public int Status { get; set; }
 }
@@ -73,6 +73,7 @@ public class InvoiceCreateViewModel
 public class InvoiceDetailInputViewModel
 {
     public Guid ServiceId { get; set; }
+    public string? ServiceName { get; set; }
     public decimal Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public string? Note { get; set; }

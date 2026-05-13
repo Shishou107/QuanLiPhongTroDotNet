@@ -18,9 +18,13 @@ public class PaymentsController : Controller
         _invoiceService = invoiceService;
     }
 
-    public async Task<IActionResult> Index(int page = 1)
+    public async Task<IActionResult> Index(string? keyword, DateTime? fromDate, DateTime? toDate, string? method, int page = 1)
     {
-        var result = await _paymentService.GetAllAsync(page);
+        var result = await _paymentService.GetAllAsync(keyword, fromDate, toDate, method, page);
+        ViewBag.Keyword = keyword;
+        ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+        ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+        ViewBag.Method = method;
         ViewBag.CurrentPage = result.Page;
         ViewBag.TotalPages = result.TotalPages;
         return View(result.Items);
@@ -29,18 +33,47 @@ public class PaymentsController : Controller
     [HttpGet]
     public async Task<IActionResult> Create(Guid? invoiceId)
     {
-        var unpaidInvoices = await _invoiceService.GetAllAsync(pageSize: 100); // Filter for unpaid in real case
-        ViewBag.Invoices = new SelectList(unpaidInvoices.Items.Select(i => new { 
-            Id = i.Id, 
-            DisplayName = $"{i.InvoiceCode} - {i.RoomNumber} - {i.TenantName}" 
-        }), "Id", "DisplayName", invoiceId);
-        
-        return View(new PaymentCreateViewModel { InvoiceId = invoiceId ?? Guid.Empty });
+        await PopulatePayableInvoicesAsync(invoiceId);
+
+        var model = new PaymentCreateViewModel { InvoiceId = invoiceId ?? Guid.Empty };
+        if (invoiceId.HasValue)
+        {
+            var invoice = await _invoiceService.GetByIdAsync(invoiceId.Value);
+            if (invoice != null && invoice.DebtAmount > 0)
+            {
+                model.Amount = invoice.DebtAmount;
+            }
+        }
+
+        return View(model);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create(PaymentCreateViewModel model)
     {
+        var invoice = model.InvoiceId == Guid.Empty ? null : await _invoiceService.GetByIdAsync(model.InvoiceId);
+        if (invoice == null)
+        {
+            ModelState.AddModelError(nameof(model.InvoiceId), "Hóa đơn không tồn tại");
+        }
+        else
+        {
+            if (invoice.TotalAmount <= 0)
+            {
+                ModelState.AddModelError(nameof(model.InvoiceId), "Hóa đơn chưa có tổng tiền, vui lòng cập nhật chi tiết hóa đơn trước khi thanh toán");
+            }
+
+            if (invoice.DebtAmount <= 0)
+            {
+                ModelState.AddModelError(nameof(model.Amount), "Hóa đơn đã thanh toán đủ");
+            }
+
+            if (model.Amount > invoice.DebtAmount)
+            {
+                ModelState.AddModelError(nameof(model.Amount), $"Số tiền thanh toán không được vượt quá {invoice.DebtAmount:N0} đồng");
+            }
+        }
+
         if (ModelState.IsValid)
         {
             var result = await _paymentService.CreateAsync(model);
@@ -49,8 +82,11 @@ public class PaymentsController : Controller
                 TempData["Success"] = "Thanh toán thành công";
                 return RedirectToAction(nameof(Index));
             }
+
             TempData["Error"] = result?.Message ?? "Lỗi khi thanh toán";
         }
+
+        await PopulatePayableInvoicesAsync(model.InvoiceId);
         return View(model);
     }
 
@@ -60,5 +96,19 @@ public class PaymentsController : Controller
         var model = await _paymentService.GetByIdAsync(id);
         if (model == null) return NotFound();
         return View(model);
+    }
+
+    private async Task PopulatePayableInvoicesAsync(Guid? selectedInvoiceId = null)
+    {
+        var invoices = await _invoiceService.GetAllAsync(pageSize: 100);
+        var payableInvoices = invoices.Items
+            .Where(i => i.DebtAmount > 0)
+            .Select(i => new
+            {
+                Id = i.Id,
+                DisplayName = $"{i.InvoiceCode} - {i.RoomNumber} - {i.TenantName} - còn nợ {i.DebtAmount:N0}"
+            });
+
+        ViewBag.Invoices = new SelectList(payableInvoices, "Id", "DisplayName", selectedInvoiceId);
     }
 }

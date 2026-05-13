@@ -1,6 +1,13 @@
 @model QuanLyPhongTro.Models.ViewModels.PaymentListViewModel
 @{
     Layout = null;
+    var paymentMethod = Model.Method switch
+    {
+        "1" => "Chuyển khoản",
+        "2" => "Tiền mặt",
+        "3" => "Ví điện tử",
+        _ => Model.Method
+    };
 }
 
 <!DOCTYPE html>
@@ -11,11 +18,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <style>
         body { font-family: 'Arial', sans-serif; padding: 30px; background: #f8f9fa; }
-        .receipt-container { 
-            max-width: 600px; 
-            margin: auto; 
-            background: white; 
-            padding: 30px; 
+        .receipt-container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 30px;
             border: 1px solid #dee2e6;
             box-shadow: 0 0 10px rgba(0,0,0,0.05);
         }
@@ -56,7 +63,7 @@
         </div>
         <div class="row mb-3">
             <div class="col-4 text-muted">Phương thức:</div>
-            <div class="col-8">@Model.Method</div>
+            <div class="col-8">@paymentMethod</div>
         </div>
         <div class="row mb-3">
             <div class="col-4 text-muted">Nội dung:</div>

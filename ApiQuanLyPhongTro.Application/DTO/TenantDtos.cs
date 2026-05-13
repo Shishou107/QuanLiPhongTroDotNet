@@ -13,6 +13,7 @@ public class TenantListDto
     public string? Address { get; set; }
     public string? CurrentRoom { get; set; }
     public string? CurrentBuilding { get; set; }
+    public int TenantStatus { get; set; }
     public string StatusText { get; set; } = string.Empty;
 }
 

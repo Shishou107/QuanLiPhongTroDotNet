@@ -31,7 +31,7 @@ public class AccountController : ControllerBase
 
         if (!await reader.ReadAsync())
         {
-            return Unauthorized(ApiResponse.FailureResult("Ten dang nhap hoac mat khau khong dung"));
+            return Unauthorized(ApiResponse.FailureResult("Tên đăng nhập hoặc mật khẩu không đúng"));
         }
 
         var account = new
@@ -46,7 +46,7 @@ public class AccountController : ControllerBase
 
         if (!account.IsActive || !VerifyPassword(dto.Password, account.PasswordHash))
         {
-            return Unauthorized(ApiResponse.FailureResult("Ten dang nhap hoac mat khau khong dung"));
+            return Unauthorized(ApiResponse.FailureResult("Tên đăng nhập hoặc mật khẩu không đúng"));
         }
 
         await reader.CloseAsync();
@@ -63,7 +63,7 @@ public class AccountController : ControllerBase
             Email = account.Email
         };
 
-        return Ok(ApiResponse<LoginResultDto>.SuccessResult(result, "Dang nhap thanh cong"));
+        return Ok(ApiResponse<LoginResultDto>.SuccessResult(result, "Đăng nhập thành công"));
     }
 
     private static bool VerifyPassword(string password, string storedPassword)

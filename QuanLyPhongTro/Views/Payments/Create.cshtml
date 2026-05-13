@@ -1,11 +1,11 @@
 @model QuanLyPhongTro.Models.ViewModels.PaymentCreateViewModel
 @{
-    ViewData["Title"] = "Them thanh toan";
+    ViewData["Title"] = "Thêm thanh toán";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Them thanh toan</h4>
-    <a asp-action="Index" class="btn btn-outline-secondary">Quay lai</a>
+    <h4 class="mb-0">Thêm thanh toán</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -16,7 +16,7 @@
                 <div class="col-md-6 mb-3">
                     <label asp-for="InvoiceId" class="form-label"></label>
                     <select asp-for="InvoiceId" asp-items="ViewBag.Invoices" class="form-select">
-                        <option value="">Chon hoa don</option>
+                        <option value="">Chọn hóa đơn</option>
                     </select>
                     <span asp-validation-for="InvoiceId" class="text-danger"></span>
                 </div>
@@ -44,7 +44,7 @@
                     <span asp-validation-for="Note" class="text-danger"></span>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary">Luu</button>
+            <button type="submit" class="btn btn-primary">Lưu</button>
         </form>
     </div>
 </div>

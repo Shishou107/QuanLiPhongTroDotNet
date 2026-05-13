@@ -10,10 +10,15 @@
 
 <div class="card">
     <div class="card-body">
-        <form asp-action="Index" method="get" class="row g-3 mb-4">
+        <form asp-action="Index" method="get" class="row g-3 mb-4 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Tìm kiếm</label>
+                <input type="text" name="keyword" class="form-control" placeholder="Mã HĐ, tên khách..." value="@ViewBag.Keyword">
+            </div>
             <div class="col-md-2">
-                <select name="month" class="form-select" onchange="this.form.submit()">
-                    <option value="">-- Tháng --</option>
+                <label class="form-label small text-muted">Tháng</label>
+                <select name="month" class="form-select">
+                    <option value="">Tất cả</option>
                     @for (int i = 1; i <= 12; i++)
                     {
                         <option value="@i" selected="@(ViewBag.Month == i)">Tháng @i</option>
@@ -21,20 +26,26 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <select name="year" class="form-select" onchange="this.form.submit()">
-                    <option value="">-- Năm --</option>
+                <label class="form-label small text-muted">Năm</label>
+                <select name="year" class="form-select">
+                    <option value="">Tất cả</option>
                     <option value="2026" selected="@(ViewBag.Year == 2026)">2026</option>
                     <option value="2025" selected="@(ViewBag.Year == 2025)">2025</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <select name="status" class="form-select" onchange="this.form.submit()">
-                    <option value="">-- Trạng thái --</option>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Trạng thái</label>
+                <select name="status" class="form-select">
+                    <option value="">Tất cả</option>
                     <option value="0" selected="@(ViewBag.Status == 0)">Chưa thanh toán</option>
                     <option value="1" selected="@(ViewBag.Status == 1)">Thanh toán một phần</option>
                     <option value="2" selected="@(ViewBag.Status == 2)">Đã thanh toán</option>
                     <option value="3" selected="@(ViewBag.Status == 3)">Quá hạn</option>
                 </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i> Lọc</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Xóa</a>
             </div>
         </form>
 
@@ -71,7 +82,7 @@
                             <td class="text-end">
                                 <div class="btn-group">
                                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
-                                    @if (item.Status != 2)
+                                    @if (item.DebtAmount > 0)
                                     {
                                         <a asp-controller="Payments" asp-action="Create" asp-route-invoiceId="@item.Id" class="btn btn-sm btn-outline-success"><i class="fas fa-hand-holding-usd"></i></a>
                                     }

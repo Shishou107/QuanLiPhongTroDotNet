@@ -89,7 +89,7 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM dbo.InvoiceDetails WHERE ServiceId = @Id)
     BEGIN
-        RAISERROR(N'Khong the xoa dich vu da phat sinh trong hoa don', 16, 1);
+        RAISERROR(N'Không thể xóa dịch vụ đã phát sinh trong hóa đơn', 16, 1);
         RETURN;
     END;
 
@@ -110,8 +110,20 @@ BEGIN
         (SELECT COUNT(*) FROM dbo.Rooms WHERE ISNULL(Status, 0) = 2) AS MaintenanceRooms,
         (SELECT COUNT(*) FROM dbo.Tenants) AS TotalTenants,
         (SELECT COUNT(*) FROM dbo.Contracts WHERE ISNULL(Status, 0) = 1) AS ActiveContracts,
-        (SELECT COUNT(*) FROM dbo.Invoices WHERE ISNULL(Status, 0) IN (0, 1)) AS UnpaidInvoices,
-        (SELECT COUNT(*) FROM dbo.Invoices WHERE ISNULL(Status, 0) = 3) AS OverdueInvoices,
+        (SELECT COUNT(*) FROM dbo.Invoices WHERE
+            CASE
+                WHEN ISNULL(PaidAmount, 0) >= ISNULL(TotalAmount, 0) AND ISNULL(TotalAmount, 0) > 0 THEN 2
+                WHEN DueDate IS NOT NULL AND DueDate < CAST(GETDATE() AS DATE) AND ISNULL(TotalAmount, 0) > ISNULL(PaidAmount, 0) THEN 3
+                WHEN ISNULL(PaidAmount, 0) > 0 THEN 1
+                ELSE 0
+            END IN (0, 1)) AS UnpaidInvoices,
+        (SELECT COUNT(*) FROM dbo.Invoices WHERE
+            CASE
+                WHEN ISNULL(PaidAmount, 0) >= ISNULL(TotalAmount, 0) AND ISNULL(TotalAmount, 0) > 0 THEN 2
+                WHEN DueDate IS NOT NULL AND DueDate < CAST(GETDATE() AS DATE) AND ISNULL(TotalAmount, 0) > ISNULL(PaidAmount, 0) THEN 3
+                WHEN ISNULL(PaidAmount, 0) > 0 THEN 1
+                ELSE 0
+            END = 3) AS OverdueInvoices,
         ISNULL((SELECT SUM(ISNULL(PaidAmount, 0)) FROM dbo.Invoices), 0) AS TotalPaidAmount,
         ISNULL((SELECT SUM(TotalAmount - ISNULL(PaidAmount, 0)) FROM dbo.Invoices), 0) AS TotalDebtAmount;
 END;
@@ -142,7 +154,7 @@ BEGIN
 
     SELECT
         v.Status,
-        CASE v.Status WHEN 0 THEN N'Trong' WHEN 1 THEN N'Dang thue' WHEN 2 THEN N'Bao tri' ELSE N'Khong xac dinh' END AS StatusText,
+        CASE v.Status WHEN 0 THEN N'Trống' WHEN 1 THEN N'Đang thuê' WHEN 2 THEN N'Bảo trì' ELSE N'Không xác định' END AS StatusText,
         COUNT(r.Id) AS Count
     FROM (VALUES (0),(1),(2)) AS v(Status)
     LEFT JOIN dbo.Rooms AS r ON ISNULL(r.Status, 0) = v.Status
@@ -172,7 +184,7 @@ BEGIN
     SELECT
         r.Id, r.RoomNumber, r.BuildingId, b.Name AS BuildingName, r.Area, r.BasePrice AS RentPrice,
         CASE WHEN c.Id IS NOT NULL THEN 1 ELSE CAST(ISNULL(r.Status, 0) AS INT) END AS Status,
-        ISNULL(t.FullName, N'Chua co') AS CurrentTenantName,
+        ISNULL(t.FullName, N'Chưa có') AS CurrentTenantName,
         c.Id AS CurrentContractId
     FROM dbo.Rooms AS r
     INNER JOIN dbo.Buildings AS b ON b.Id = r.BuildingId
@@ -288,7 +300,7 @@ BEGIN
     IF ISNULL(@Status, (SELECT Status FROM dbo.Rooms WHERE Id = @Id)) = 0
        AND EXISTS (SELECT 1 FROM dbo.Contracts WHERE RoomId = @Id AND ISNULL(Status, 0) = 1)
     BEGIN
-        RAISERROR(N'Phong dang co hop dong hieu luc, khong the chuyen sang Trong. Hay ket thuc hoac huy hop dong truoc.', 16, 1);
+        RAISERROR(N'Phòng đang có hợp đồng hiệu lực, không thể chuyển sang Trống. Hãy kết thúc hoặc hủy hợp đồng trước.', 16, 1);
         RETURN;
     END
 
@@ -315,7 +327,7 @@ BEGIN
     IF @Status = 0
        AND EXISTS (SELECT 1 FROM dbo.Contracts WHERE RoomId = @Id AND ISNULL(Status, 0) = 1)
     BEGIN
-        RAISERROR(N'Phong dang co hop dong hieu luc, khong the chuyen sang Trong. Hay ket thuc hoac huy hop dong truoc.', 16, 1);
+        RAISERROR(N'Phòng đang có hợp đồng hiệu lực, không thể chuyển sang Trống. Hãy kết thúc hoặc hủy hợp đồng trước.', 16, 1);
         RETURN;
     END
 
@@ -334,7 +346,7 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM dbo.Contracts WHERE RoomId = @Id)
     BEGIN
-        RAISERROR(N'Khong the xoa phong da co hop dong', 16, 1);
+        RAISERROR(N'Không thể xóa phòng đã có hợp đồng', 16, 1);
         RETURN;
     END;
 
@@ -361,9 +373,9 @@ BEGIN
             t.Email,
             t.IdCardNumber AS IdentityNumber,
             t.PermanentAddress AS Address,
-            ISNULL(r.RoomNumber, N'Chua co') AS CurrentRoom,
-            ISNULL(b.Name, N'Chua co') AS CurrentBuilding,
-            CASE WHEN c.Id IS NULL THEN N'Khong thue' ELSE N'Dang thue' END AS StatusText,
+            ISNULL(r.RoomNumber, N'Chưa có') AS CurrentRoom,
+            ISNULL(b.Name, N'Chưa có') AS CurrentBuilding,
+            CASE WHEN c.Id IS NULL THEN N'Không thuê' ELSE N'Đang thuê' END AS StatusText,
             CASE WHEN c.Id IS NULL THEN 0 ELSE 1 END AS TenantStatus
         FROM dbo.Tenants AS t
         LEFT JOIN dbo.Contracts AS c ON c.TenantId = t.Id AND ISNULL(c.Status, 0) = 1
@@ -388,9 +400,9 @@ BEGIN
             t.Email,
             t.IdCardNumber AS IdentityNumber,
             t.PermanentAddress AS Address,
-            ISNULL(r.RoomNumber, N'Chua co') AS CurrentRoom,
-            ISNULL(b.Name, N'Chua co') AS CurrentBuilding,
-            CASE WHEN c.Id IS NULL THEN N'Khong thue' ELSE N'Dang thue' END AS StatusText,
+            ISNULL(r.RoomNumber, N'Chưa có') AS CurrentRoom,
+            ISNULL(b.Name, N'Chưa có') AS CurrentBuilding,
+            CASE WHEN c.Id IS NULL THEN N'Không thuê' ELSE N'Đang thuê' END AS StatusText,
             CASE WHEN c.Id IS NULL THEN 0 ELSE 1 END AS TenantStatus
         FROM dbo.Tenants AS t
         LEFT JOIN dbo.Contracts AS c ON c.TenantId = t.Id AND ISNULL(c.Status, 0) = 1
@@ -402,7 +414,7 @@ BEGIN
            OR ISNULL(t.Email, '') LIKE N'%' + @Keyword + N'%'
            OR t.IdCardNumber LIKE N'%' + @Keyword + N'%'
     )
-    SELECT Id, FullName, PhoneNumber, Email, IdentityNumber, Address, CurrentRoom, CurrentBuilding, StatusText
+    SELECT Id, FullName, PhoneNumber, Email, IdentityNumber, Address, CurrentRoom, CurrentBuilding, TenantStatus, StatusText
     FROM TenantRows
     WHERE @Status IS NULL OR TenantStatus = @Status
     ORDER BY FullName
@@ -533,7 +545,7 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM dbo.Contracts WHERE TenantId = @Id)
     BEGIN
-        RAISERROR(N'Khong the xoa khach thue da co hop dong', 16, 1);
+        RAISERROR(N'Không thể xóa khách thuê đã có hợp đồng', 16, 1);
         RETURN;
     END;
 
@@ -654,19 +666,19 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM dbo.Rooms WHERE Id = @RoomId)
     BEGIN
-        RAISERROR(N'Phong khong ton tai', 16, 1);
+        RAISERROR(N'Phòng không tồn tại', 16, 1);
         RETURN;
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.Tenants WHERE Id = @TenantId)
     BEGIN
-        RAISERROR(N'Khach thue khong ton tai', 16, 1);
+        RAISERROR(N'Khách thuê không tồn tại', 16, 1);
         RETURN;
     END;
 
     IF EXISTS (SELECT 1 FROM dbo.Contracts WHERE RoomId = @RoomId AND ISNULL(Status, 0) = 1)
     BEGIN
-        RAISERROR(N'Phong da co hop dong dang hieu luc', 16, 1);
+        RAISERROR(N'Phòng đã có hợp đồng đang hiệu lực', 16, 1);
         RETURN;
     END;
 
@@ -763,7 +775,13 @@ BEGIN
       AND (@BuildingId IS NULL OR r.BuildingId = @BuildingId)
       AND (@Month IS NULL OR i.BillingMonth = @Month)
       AND (@Year IS NULL OR i.BillingYear = @Year)
-      AND (@Status IS NULL OR ISNULL(i.Status, 0) = @Status)
+      AND (@Status IS NULL OR
+            CASE
+                WHEN ISNULL(i.PaidAmount, 0) >= ISNULL(i.TotalAmount, 0) AND ISNULL(i.TotalAmount, 0) > 0 THEN 2
+                WHEN i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0) THEN 3
+                WHEN ISNULL(i.PaidAmount, 0) > 0 THEN 1
+                ELSE 0
+            END = @Status)
       AND (@Keyword IS NULL OR t.FullName LIKE N'%' + @Keyword + N'%' OR r.RoomNumber LIKE N'%' + @Keyword + N'%');
 
     SELECT
@@ -777,7 +795,12 @@ BEGIN
         i.TotalAmount,
         ISNULL(i.PaidAmount, 0) AS PaidAmount,
         i.DueDate,
-        CAST(ISNULL(i.Status, 0) AS INT) AS Status
+        CASE
+            WHEN ISNULL(i.PaidAmount, 0) >= ISNULL(i.TotalAmount, 0) AND ISNULL(i.TotalAmount, 0) > 0 THEN 2
+            WHEN i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0) THEN 3
+            WHEN ISNULL(i.PaidAmount, 0) > 0 THEN 1
+            ELSE 0
+        END AS Status
     FROM dbo.Invoices AS i
     INNER JOIN dbo.Contracts AS c ON c.Id = i.ContractId
     INNER JOIN dbo.Tenants AS t ON t.Id = c.TenantId
@@ -789,7 +812,13 @@ BEGIN
       AND (@BuildingId IS NULL OR r.BuildingId = @BuildingId)
       AND (@Month IS NULL OR i.BillingMonth = @Month)
       AND (@Year IS NULL OR i.BillingYear = @Year)
-      AND (@Status IS NULL OR ISNULL(i.Status, 0) = @Status)
+      AND (@Status IS NULL OR
+            CASE
+                WHEN ISNULL(i.PaidAmount, 0) >= ISNULL(i.TotalAmount, 0) AND ISNULL(i.TotalAmount, 0) > 0 THEN 2
+                WHEN i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0) THEN 3
+                WHEN ISNULL(i.PaidAmount, 0) > 0 THEN 1
+                ELSE 0
+            END = @Status)
       AND (@Keyword IS NULL OR t.FullName LIKE N'%' + @Keyword + N'%' OR r.RoomNumber LIKE N'%' + @Keyword + N'%')
     ORDER BY i.BillingYear DESC, i.BillingMonth DESC
     OFFSET (@Page - 1) * @PageSize ROWS FETCH NEXT @PageSize ROWS ONLY;
@@ -818,7 +847,12 @@ BEGIN
         i.TotalAmount,
         ISNULL(i.PaidAmount, 0) AS PaidAmount,
         i.DueDate,
-        CAST(ISNULL(i.Status, 0) AS INT) AS Status
+        CASE
+            WHEN ISNULL(i.PaidAmount, 0) >= ISNULL(i.TotalAmount, 0) AND ISNULL(i.TotalAmount, 0) > 0 THEN 2
+            WHEN i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0) THEN 3
+            WHEN ISNULL(i.PaidAmount, 0) > 0 THEN 1
+            ELSE 0
+        END AS Status
     FROM dbo.Invoices AS i
     INNER JOIN dbo.Contracts AS c ON c.Id = i.ContractId
     INNER JOIN dbo.Tenants AS t ON t.Id = c.TenantId
@@ -857,20 +891,28 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM dbo.Contracts WHERE Id = @ContractId)
     BEGIN
-        RAISERROR(N'Hop dong khong ton tai', 16, 1);
+        RAISERROR(N'Hợp đồng không tồn tại', 16, 1);
         RETURN;
     END;
 
-    IF EXISTS (SELECT 1 FROM dbo.Invoices WHERE ContractId = @ContractId AND BillingMonth = @BillingMonth AND BillingYear = @BillingYear)
+    -- Check if invoice already exists for this month
+    SELECT @Id = Id FROM dbo.Invoices 
+    WHERE ContractId = @ContractId AND BillingMonth = @BillingMonth AND BillingYear = @BillingYear;
+
+    IF @Id IS NULL
     BEGIN
-        RAISERROR(N'Hoa don cho thang nay da ton tai', 16, 1);
-        RETURN;
-    END;
-
-    SET @Id = NEWID();
-
-    INSERT INTO dbo.Invoices (Id, ContractId, BillingMonth, BillingYear, TotalAmount, PaidAmount, DueDate, Status, CreatedAt)
-    VALUES (@Id, @ContractId, @BillingMonth, @BillingYear, 0, 0, @DueDate, 0, SYSDATETIME());
+        SET @Id = NEWID();
+        INSERT INTO dbo.Invoices (Id, ContractId, BillingMonth, BillingYear, TotalAmount, PaidAmount, DueDate, Status, CreatedAt)
+        VALUES (@Id, @ContractId, @BillingMonth, @BillingYear, 0, 0, @DueDate, 0, SYSDATETIME());
+    END
+    ELSE
+    BEGIN
+        -- If exists, optionally update the DueDate if provided
+        IF @DueDate IS NOT NULL
+        BEGIN
+            UPDATE dbo.Invoices SET DueDate = @DueDate, UpdatedAt = SYSDATETIME() WHERE Id = @Id;
+        END
+    END
 END;
 GO
 
@@ -914,16 +956,47 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @Description NVARCHAR(255);
-    SELECT @Description = Name FROM dbo.Services WHERE Id = @ServiceId;
+    DECLARE @EffectiveUnitPrice DECIMAL(18, 2);
+
+    SELECT
+        @Description = Name,
+        @EffectiveUnitPrice = UnitPrice
+    FROM dbo.Services
+    WHERE Id = @ServiceId;
 
     IF @Description IS NULL
     BEGIN
-        RAISERROR(N'Dich vu khong ton tai', 16, 1);
+        RAISERROR(N'Dịch vụ không tồn tại', 16, 1);
         RETURN;
     END;
 
-    INSERT INTO dbo.InvoiceDetails (Id, InvoiceId, ServiceId, Description, Quantity, UnitPrice, CreatedAt)
-    VALUES (NEWID(), @InvoiceId, @ServiceId, @Description, @Quantity, @UnitPrice, SYSDATETIME());
+    IF @Quantity <= 0
+    BEGIN
+        RAISERROR(N'Số lượng phải lớn hơn 0', 16, 1);
+        RETURN;
+    END;
+
+    IF @UnitPrice > 0
+        SET @EffectiveUnitPrice = @UnitPrice;
+
+    -- Allow 0 price if it's explicitly set or intended
+    SET @EffectiveUnitPrice = ISNULL(@EffectiveUnitPrice, 0);
+
+    -- Check if service already exists in this invoice
+    IF EXISTS (SELECT 1 FROM dbo.InvoiceDetails WHERE InvoiceId = @InvoiceId AND ServiceId = @ServiceId)
+    BEGIN
+        UPDATE dbo.InvoiceDetails
+        SET Quantity = Quantity + @Quantity,
+            UnitPrice = @EffectiveUnitPrice, -- Update with latest price
+            Note = CASE WHEN @Note IS NOT NULL THEN ISNULL(Note + '; ', '') + @Note ELSE Note END,
+            UpdatedAt = SYSDATETIME()
+        WHERE InvoiceId = @InvoiceId AND ServiceId = @ServiceId;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO dbo.InvoiceDetails (Id, InvoiceId, ServiceId, Description, Quantity, UnitPrice, CreatedAt)
+        VALUES (NEWID(), @InvoiceId, @ServiceId, @Description, @Quantity, @EffectiveUnitPrice, SYSDATETIME());
+    END
 END;
 GO
 
@@ -935,18 +1008,21 @@ BEGIN
 
     UPDATE i
     SET TotalAmount = ISNULL(d.TotalAmount, 0),
-        PaidAmount = ISNULL(p.PaidAmount, 0),
-        Status = CASE
-            WHEN ISNULL(p.PaidAmount, 0) >= ISNULL(d.TotalAmount, 0) AND ISNULL(d.TotalAmount, 0) > 0 THEN 2
-            WHEN ISNULL(p.PaidAmount, 0) > 0 THEN 1
-            WHEN i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) THEN 3
-            ELSE 0
+        PaidAmount = CASE
+            WHEN ISNULL(d.TotalAmount, 0) > 0 AND ISNULL(p.PaidAmount, 0) > ISNULL(d.TotalAmount, 0) THEN ISNULL(d.TotalAmount, 0)
+            WHEN ISNULL(d.TotalAmount, 0) <= 0 AND ISNULL(p.PaidAmount, 0) > 0 THEN 0
+            ELSE ISNULL(p.PaidAmount, 0)
         END,
+        Status = 0,
         UpdatedAt = SYSDATETIME()
     FROM dbo.Invoices AS i
     OUTER APPLY (SELECT SUM(ISNULL(Amount, Quantity * UnitPrice)) AS TotalAmount FROM dbo.InvoiceDetails WHERE InvoiceId = i.Id) AS d
     OUTER APPLY (SELECT SUM(Amount) AS PaidAmount FROM dbo.Payments WHERE InvoiceId = i.Id) AS p
     WHERE i.Id = @Id;
+
+    UPDATE dbo.Invoices SET Status = 1, UpdatedAt = SYSDATETIME() WHERE Id = @Id AND PaidAmount > 0 AND TotalAmount > PaidAmount;
+    UPDATE dbo.Invoices SET Status = 3, UpdatedAt = SYSDATETIME() WHERE Id = @Id AND DueDate IS NOT NULL AND DueDate < CAST(GETDATE() AS DATE) AND TotalAmount > PaidAmount;
+    UPDATE dbo.Invoices SET Status = 2, UpdatedAt = SYSDATETIME() WHERE Id = @Id AND PaidAmount >= TotalAmount AND TotalAmount > 0;
 END;
 GO
 
@@ -957,13 +1033,21 @@ BEGIN
 
     SELECT i.Id, UPPER(LEFT(CONVERT(VARCHAR(36), i.Id), 8)) AS InvoiceCode, CAST(i.BillingMonth AS INT) AS BillingMonth,
            CAST(i.BillingYear AS INT) AS BillingYear, t.FullName AS TenantName, r.RoomNumber, b.Name AS BuildingName,
-           i.TotalAmount, ISNULL(i.PaidAmount, 0) AS PaidAmount, i.DueDate, CAST(ISNULL(i.Status, 0) AS INT) AS Status
+           i.TotalAmount, ISNULL(i.PaidAmount, 0) AS PaidAmount, i.DueDate,
+           CASE
+               WHEN ISNULL(i.PaidAmount, 0) >= ISNULL(i.TotalAmount, 0) AND ISNULL(i.TotalAmount, 0) > 0 THEN 2
+               WHEN i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0) THEN 3
+               WHEN ISNULL(i.PaidAmount, 0) > 0 THEN 1
+               ELSE 0
+           END AS Status
     FROM dbo.Invoices AS i
     INNER JOIN dbo.Contracts AS c ON c.Id = i.ContractId
     INNER JOIN dbo.Tenants AS t ON t.Id = c.TenantId
     INNER JOIN dbo.Rooms AS r ON r.Id = c.RoomId
     INNER JOIN dbo.Buildings AS b ON b.Id = r.BuildingId
-    WHERE ISNULL(i.Status, 0) = 3;
+    WHERE i.DueDate IS NOT NULL
+      AND i.DueDate < CAST(GETDATE() AS DATE)
+      AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0);
 END;
 GO
 
@@ -974,13 +1058,20 @@ BEGIN
 
     SELECT i.Id, UPPER(LEFT(CONVERT(VARCHAR(36), i.Id), 8)) AS InvoiceCode, CAST(i.BillingMonth AS INT) AS BillingMonth,
            CAST(i.BillingYear AS INT) AS BillingYear, t.FullName AS TenantName, r.RoomNumber, b.Name AS BuildingName,
-           i.TotalAmount, ISNULL(i.PaidAmount, 0) AS PaidAmount, i.DueDate, CAST(ISNULL(i.Status, 0) AS INT) AS Status
+           i.TotalAmount, ISNULL(i.PaidAmount, 0) AS PaidAmount, i.DueDate,
+           CASE
+               WHEN ISNULL(i.PaidAmount, 0) >= ISNULL(i.TotalAmount, 0) AND ISNULL(i.TotalAmount, 0) > 0 THEN 2
+               WHEN i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0) THEN 3
+               WHEN ISNULL(i.PaidAmount, 0) > 0 THEN 1
+               ELSE 0
+           END AS Status
     FROM dbo.Invoices AS i
     INNER JOIN dbo.Contracts AS c ON c.Id = i.ContractId
     INNER JOIN dbo.Tenants AS t ON t.Id = c.TenantId
     INNER JOIN dbo.Rooms AS r ON r.Id = c.RoomId
     INNER JOIN dbo.Buildings AS b ON b.Id = r.BuildingId
-    WHERE ISNULL(i.Status, 0) IN (0, 1);
+    WHERE NOT (ISNULL(i.PaidAmount, 0) >= ISNULL(i.TotalAmount, 0) AND ISNULL(i.TotalAmount, 0) > 0)
+      AND NOT (i.DueDate IS NOT NULL AND i.DueDate < CAST(GETDATE() AS DATE) AND ISNULL(i.TotalAmount, 0) > ISNULL(i.PaidAmount, 0));
 END;
 GO
 
@@ -992,7 +1083,7 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM dbo.Payments WHERE InvoiceId = @Id)
     BEGIN
-        RAISERROR(N'Khong the xoa hoa don da co thanh toan', 16, 1);
+        RAISERROR(N'Không thể xóa hóa đơn đã có thanh toán', 16, 1);
         RETURN;
     END;
 
@@ -1008,6 +1099,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Payments_GetAll
     @FromDate DATETIME = NULL,
     @ToDate DATETIME = NULL,
     @Method NVARCHAR(50) = NULL,
+    @Keyword NVARCHAR(100) = NULL,
     @Page INT = 1,
     @PageSize INT = 10,
     @TotalItems INT OUTPUT
@@ -1019,22 +1111,25 @@ BEGIN
     FROM dbo.Payments AS p
     INNER JOIN dbo.Invoices AS i ON i.Id = p.InvoiceId
     INNER JOIN dbo.Contracts AS c ON c.Id = i.ContractId
+    INNER JOIN dbo.Tenants AS t ON t.Id = c.TenantId
+    INNER JOIN dbo.Rooms AS r ON r.Id = c.RoomId
     WHERE (@InvoiceId IS NULL OR p.InvoiceId = @InvoiceId)
       AND (@TenantId IS NULL OR c.TenantId = @TenantId)
       AND (@RoomId IS NULL OR c.RoomId = @RoomId)
       AND (@FromDate IS NULL OR p.PaymentDate >= @FromDate)
       AND (@ToDate IS NULL OR p.PaymentDate <= @ToDate)
-      AND (@Method IS NULL OR CONVERT(NVARCHAR(50), p.PaymentMethod) = @Method);
+      AND (@Method IS NULL OR p.Method = @Method)
+      AND (@Keyword IS NULL OR t.FullName LIKE '%' + @Keyword + '%' OR UPPER(LEFT(CONVERT(VARCHAR(36), i.Id), 8)) LIKE '%' + @Keyword + '%');
 
     SELECT
         p.Id,
         p.InvoiceId,
-        UPPER(LEFT(CONVERT(VARCHAR(36), p.InvoiceId), 8)) AS InvoiceCode,
+        UPPER(LEFT(CONVERT(VARCHAR(36), i.Id), 8)) AS InvoiceCode,
         t.FullName AS TenantName,
         r.RoomNumber,
         p.Amount,
-        CONVERT(NVARCHAR(50), p.PaymentMethod) AS Method,
         p.PaymentDate,
+        p.Method,
         p.Note
     FROM dbo.Payments AS p
     INNER JOIN dbo.Invoices AS i ON i.Id = p.InvoiceId
@@ -1046,7 +1141,31 @@ BEGIN
       AND (@RoomId IS NULL OR c.RoomId = @RoomId)
       AND (@FromDate IS NULL OR p.PaymentDate >= @FromDate)
       AND (@ToDate IS NULL OR p.PaymentDate <= @ToDate)
-      AND (@Method IS NULL OR CONVERT(NVARCHAR(50), p.PaymentMethod) = @Method)
+      AND (@Method IS NULL OR p.Method = @Method)
+      AND (@Keyword IS NULL OR t.FullName LIKE '%' + @Keyword + '%' OR UPPER(LEFT(CONVERT(VARCHAR(36), i.Id), 8)) LIKE '%' + @Keyword + '%');
+
+    SELECT
+        p.Id,
+        p.InvoiceId,
+        UPPER(LEFT(CONVERT(VARCHAR(36), i.Id), 8)) AS InvoiceCode,
+        t.FullName AS TenantName,
+        r.RoomNumber,
+        p.Amount,
+        p.PaymentDate,
+        p.Method,
+        p.Note
+    FROM dbo.Payments AS p
+    INNER JOIN dbo.Invoices AS i ON i.Id = p.InvoiceId
+    INNER JOIN dbo.Contracts AS c ON c.Id = i.ContractId
+    INNER JOIN dbo.Tenants AS t ON t.Id = c.TenantId
+    INNER JOIN dbo.Rooms AS r ON r.Id = c.RoomId
+    WHERE (@InvoiceId IS NULL OR p.InvoiceId = @InvoiceId)
+      AND (@TenantId IS NULL OR c.TenantId = @TenantId)
+      AND (@RoomId IS NULL OR c.RoomId = @RoomId)
+      AND (@FromDate IS NULL OR p.PaymentDate >= @FromDate)
+      AND (@ToDate IS NULL OR p.PaymentDate <= @ToDate)
+      AND (@Method IS NULL OR p.Method = @Method)
+      AND (@Keyword IS NULL OR t.FullName LIKE '%' + @Keyword + '%' OR UPPER(LEFT(CONVERT(VARCHAR(36), i.Id), 8)) LIKE '%' + @Keyword + '%')
     ORDER BY p.PaymentDate DESC
     OFFSET (@Page - 1) * @PageSize ROWS FETCH NEXT @PageSize ROWS ONLY;
 END;
@@ -1088,22 +1207,59 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    DECLARE @TotalAmount DECIMAL(18, 2);
+    DECLARE @PaidAmount DECIMAL(18, 2);
+    DECLARE @DebtAmount DECIMAL(18, 2);
+    DECLARE @MethodCode TINYINT;
+
     IF NOT EXISTS (SELECT 1 FROM dbo.Invoices WHERE Id = @InvoiceId)
     BEGIN
-        RAISERROR(N'Hoa don khong ton tai', 16, 1);
+        RAISERROR(N'Hóa đơn không tồn tại', 16, 1);
         RETURN;
     END;
 
     IF @Amount <= 0
     BEGIN
-        RAISERROR(N'So tien thanh toan phai lon hon 0', 16, 1);
+        RAISERROR(N'Số tiền thanh toán phải lớn hơn 0', 16, 1);
         RETURN;
     END;
+
+    EXEC dbo.sp_Invoices_Recalculate @InvoiceId;
+
+    SELECT
+        @TotalAmount = ISNULL(TotalAmount, 0),
+        @PaidAmount = ISNULL(PaidAmount, 0)
+    FROM dbo.Invoices
+    WHERE Id = @InvoiceId;
+
+    SET @DebtAmount = ISNULL(@TotalAmount, 0) - ISNULL(@PaidAmount, 0);
+
+    IF ISNULL(@TotalAmount, 0) <= 0
+    BEGIN
+        RAISERROR(N'Hóa đơn chưa có tổng tiền, vui lòng cập nhật chi tiết hóa đơn trước khi thanh toán', 16, 1);
+        RETURN;
+    END;
+
+    IF @DebtAmount <= 0
+    BEGIN
+        RAISERROR(N'Hóa đơn đã thanh toán đủ', 16, 1);
+        RETURN;
+    END;
+
+    IF @Amount > @DebtAmount
+    BEGIN
+        RAISERROR(N'Số tiền thanh toán vượt quá số tiền còn nợ', 16, 1);
+        RETURN;
+    END;
+
+    SET @MethodCode = TRY_CONVERT(TINYINT, @Method);
+    IF @MethodCode NOT IN (1, 2, 3)
+        SET @MethodCode = 1;
 
     SET @Id = NEWID();
 
     INSERT INTO dbo.Payments (Id, InvoiceId, Amount, PaymentDate, PaymentMethod, Note, CreatedAt)
-    VALUES (@Id, @InvoiceId, @Amount, ISNULL(@PaymentDate, GETDATE()), TRY_CONVERT(TINYINT, ISNULL(@Method, '0')), @Note, SYSDATETIME());
+    VALUES (@Id, @InvoiceId, @Amount, ISNULL(@PaymentDate, GETDATE()), @MethodCode, @Note, SYSDATETIME());
 
     EXEC dbo.sp_Invoices_Recalculate @InvoiceId;
 END;
@@ -1122,6 +1278,95 @@ BEGIN
 
     IF @InvoiceId IS NOT NULL
         EXEC dbo.sp_Invoices_Recalculate @InvoiceId;
+END;
+GO
+
+CREATE OR ALTER TRIGGER dbo.trg_Payments_UpdateInvoiceSummary
+ON dbo.Payments
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM inserted WHERE Amount <= 0)
+    BEGIN
+        RAISERROR(N'Số tiền thanh toán phải lớn hơn 0', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+
+    DECLARE @ChangedInvoices TABLE (InvoiceId UNIQUEIDENTIFIER PRIMARY KEY);
+
+    INSERT INTO @ChangedInvoices (InvoiceId)
+    SELECT DISTINCT InvoiceId
+    FROM inserted
+    WHERE InvoiceId IS NOT NULL;
+
+    INSERT INTO @ChangedInvoices (InvoiceId)
+    SELECT DISTINCT d.InvoiceId
+    FROM deleted AS d
+    WHERE d.InvoiceId IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM @ChangedInvoices AS c WHERE c.InvoiceId = d.InvoiceId);
+
+    IF EXISTS
+    (
+        SELECT 1
+        FROM inserted AS p
+        INNER JOIN dbo.Invoices AS i ON i.Id = p.InvoiceId
+        WHERE ISNULL(i.TotalAmount, 0) <= 0
+    )
+    BEGIN
+        RAISERROR(N'Hóa đơn chưa có tổng tiền, vui lòng cập nhật chi tiết hóa đơn trước khi thanh toán', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+
+    IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.Invoices AS i
+        INNER JOIN @ChangedInvoices AS c ON c.InvoiceId = i.Id
+        OUTER APPLY (SELECT SUM(Amount) AS PaidAmount FROM dbo.Payments WHERE InvoiceId = i.Id) AS p
+        WHERE ISNULL(i.TotalAmount, 0) > 0
+          AND ISNULL(p.PaidAmount, 0) > ISNULL(i.TotalAmount, 0)
+    )
+    BEGIN
+        RAISERROR(N'Số tiền thanh toán vượt quá số tiền còn nợ', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+
+    UPDATE i
+    SET PaidAmount = ISNULL(p.PaidAmount, 0),
+        Status = 0,
+        UpdatedAt = SYSDATETIME()
+    FROM dbo.Invoices AS i
+    INNER JOIN @ChangedInvoices AS c ON c.InvoiceId = i.Id
+    OUTER APPLY (SELECT SUM(Amount) AS PaidAmount FROM dbo.Payments WHERE InvoiceId = i.Id) AS p;
+
+    UPDATE i
+    SET Status = 1,
+        UpdatedAt = SYSDATETIME()
+    FROM dbo.Invoices AS i
+    INNER JOIN @ChangedInvoices AS c ON c.InvoiceId = i.Id
+    WHERE i.PaidAmount > 0 AND i.TotalAmount > i.PaidAmount;
+
+    UPDATE i
+    SET Status = 3,
+        UpdatedAt = SYSDATETIME()
+    FROM dbo.Invoices AS i
+    INNER JOIN @ChangedInvoices AS c ON c.InvoiceId = i.Id
+    WHERE i.DueDate IS NOT NULL
+      AND i.DueDate < CAST(GETDATE() AS DATE)
+      AND i.TotalAmount > i.PaidAmount;
+
+    UPDATE i
+    SET Status = 2,
+        UpdatedAt = SYSDATETIME()
+    FROM dbo.Invoices AS i
+    INNER JOIN @ChangedInvoices AS c ON c.InvoiceId = i.Id
+    WHERE i.PaidAmount >= i.TotalAmount
+      AND i.TotalAmount > 0;
 END;
 GO
 
@@ -1166,7 +1411,7 @@ BEGIN
     SELECT @TotalRooms = COUNT(*) FROM dbo.Rooms;
 
     SELECT
-        CASE v.Status WHEN 0 THEN N'Trong' WHEN 1 THEN N'Dang thue' WHEN 2 THEN N'Bao tri' ELSE N'Khong xac dinh' END AS StatusText,
+        CASE v.Status WHEN 0 THEN N'Trống' WHEN 1 THEN N'Đang thuê' WHEN 2 THEN N'Bảo trì' ELSE N'Không xác định' END AS StatusText,
         COUNT(r.Id) AS Count,
         CASE WHEN @TotalRooms = 0 THEN 0 ELSE ROUND(COUNT(r.Id) / @TotalRooms * 100, 2) END AS Percentage
     FROM (VALUES (0),(1),(2)) AS v(Status)

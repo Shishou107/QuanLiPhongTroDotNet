@@ -8,6 +8,31 @@
     <a asp-action="Create" class="btn btn-primary"><i class="fas fa-file-contract me-1"></i> Tạo hợp đồng mới</a>
 </div>
 
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="row g-3">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" name="keyword" class="form-control border-start-0" placeholder="Tìm tên khách, số phòng, mã HĐ..." value="@ViewBag.Keyword">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="1" selected="@(ViewBag.Status == 1)">Đang hiệu lực</option>
+                    <option value="2" selected="@(ViewBag.Status == 2)">Đã kết thúc</option>
+                    <option value="0" selected="@(ViewBag.Status == 0)">Đã hủy</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary px-4">Lọc</button>
+                <a asp-action="Index" class="btn btn-outline-secondary px-3">Xóa bộ lọc</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">

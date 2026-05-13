@@ -109,10 +109,18 @@ public class RoomsController : Controller
         return View(room);
     }
 
-    public async Task<IActionResult> Maintenance()
+    public async Task<IActionResult> Maintenance(Guid? buildingId, string keyword, int page = 1)
     {
-        var rooms = await _roomService.GetAllAsync(status: 2, pageSize: 100); // 2 = Bảo trì
-        return View(rooms.Items);
+        var result = await _roomService.GetAllAsync(buildingId, status: 2, keyword, page);
+        var buildings = await _buildingService.GetAllAsync();
+
+        ViewBag.Buildings = new SelectList(buildings, "Id", "Name", buildingId);
+        ViewBag.BuildingId = buildingId;
+        ViewBag.Keyword = keyword;
+        ViewBag.CurrentPage = result.Page;
+        ViewBag.TotalPages = result.TotalPages;
+
+        return View(result.Items);
     }
 
     [HttpPost]

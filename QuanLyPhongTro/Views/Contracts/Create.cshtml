@@ -1,11 +1,11 @@
 @model QuanLyPhongTro.Models.ViewModels.ContractCreateViewModel
 @{
-    ViewData["Title"] = "Them hop dong";
+    ViewData["Title"] = "Thêm hợp đồng";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Them hop dong</h4>
-    <a asp-action="Index" class="btn btn-outline-secondary">Quay lai</a>
+    <h4 class="mb-0">Thêm hợp đồng</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -16,14 +16,14 @@
                 <div class="col-md-6 mb-3">
                     <label asp-for="TenantId" class="form-label"></label>
                     <select asp-for="TenantId" asp-items="ViewBag.Tenants" class="form-select">
-                        <option value="">Chon khach thue</option>
+                        <option value="">Chọn khách thuê</option>
                     </select>
                     <span asp-validation-for="TenantId" class="text-danger"></span>
                 </div>
                 <div class="col-md-6 mb-3">
                     <label asp-for="RoomId" class="form-label"></label>
                     <select asp-for="RoomId" asp-items="ViewBag.Rooms" class="form-select">
-                        <option value="">Chon phong trong</option>
+                        <option value="">Chọn phòng trống</option>
                     </select>
                     <span asp-validation-for="RoomId" class="text-danger"></span>
                 </div>
@@ -53,7 +53,7 @@
                     <span asp-validation-for="Note" class="text-danger"></span>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary">Luu</button>
+            <button type="submit" class="btn btn-primary">Lưu</button>
         </form>
     </div>
 </div>

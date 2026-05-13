@@ -39,6 +39,7 @@ public class PaymentsController : ControllerBase
         command.Parameters.Add("@FromDate", SqlDbType.DateTime).Value = SqlParameterValue.FromNullable(fromDate);
         command.Parameters.Add("@ToDate", SqlDbType.DateTime).Value = SqlParameterValue.FromNullable(toDate);
         command.Parameters.Add("@Method", SqlDbType.NVarChar, 50).Value = SqlParameterValue.FromString(method);
+        command.Parameters.Add("@Keyword", SqlDbType.NVarChar, 100).Value = SqlParameterValue.FromString(HttpContext.Request.Query["keyword"]);
         command.Parameters.Add("@Page", SqlDbType.Int).Value = page;
         command.Parameters.Add("@PageSize", SqlDbType.Int).Value = pageSize;
         var totalItemsParameter = command.Parameters.Add("@TotalItems", SqlDbType.Int);
@@ -89,7 +90,10 @@ public class PaymentsController : ControllerBase
             await using var connection = _db.CreateConnection();
             await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Payments_Create");
             command.Parameters.Add("@InvoiceId", SqlDbType.UniqueIdentifier).Value = dto.InvoiceId;
-            command.Parameters.Add("@Amount", SqlDbType.Decimal).Value = dto.Amount;
+            var amountParameter = command.Parameters.Add("@Amount", SqlDbType.Decimal);
+            amountParameter.Precision = 18;
+            amountParameter.Scale = 2;
+            amountParameter.Value = dto.Amount;
             command.Parameters.Add("@Method", SqlDbType.NVarChar, 50).Value = dto.Method;
             command.Parameters.Add("@PaymentDate", SqlDbType.DateTime).Value = SqlParameterValue.FromNullable(dto.PaymentDate);
             command.Parameters.Add("@Note", SqlDbType.NVarChar, 255).Value = SqlParameterValue.FromString(dto.Note);

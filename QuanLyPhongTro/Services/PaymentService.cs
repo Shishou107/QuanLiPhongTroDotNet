@@ -11,9 +11,10 @@ public class PaymentService
         _apiService = apiService;
     }
 
-    public async Task<PaginationResult<PaymentListViewModel>> GetAllAsync(int page = 1, int pageSize = 10)
+    public async Task<PaginationResult<PaymentListViewModel>> GetAllAsync(string? keyword = null, DateTime? fromDate = null, DateTime? toDate = null, string? method = null, int page = 1, int pageSize = 10)
     {
-        var response = await _apiService.GetAsync<PaginationResult<PaymentListViewModel>>($"payments?page={page}&pageSize={pageSize}");
+        var url = $"payments?keyword={keyword}&fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}&method={method}&page={page}&pageSize={pageSize}";
+        var response = await _apiService.GetAsync<PaginationResult<PaymentListViewModel>>(url);
         return response?.Data ?? new PaginationResult<PaymentListViewModel>();
     }
 
@@ -25,6 +26,14 @@ public class PaymentService
 
     public async Task<ApiResponse<Guid>?> CreateAsync(PaymentCreateViewModel model)
     {
-        return await _apiService.PostAsync<Guid>("payments", model);
+        var dto = new
+        {
+            InvoiceId = model.InvoiceId,
+            Amount = model.Amount,
+            Method = model.PaymentMethod.ToString(),
+            PaymentDate = model.PaymentDate,
+            Note = model.Note
+        };
+        return await _apiService.PostAsync<Guid>("payments", dto);
     }
 }

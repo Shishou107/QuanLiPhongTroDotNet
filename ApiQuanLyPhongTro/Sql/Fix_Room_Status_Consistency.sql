@@ -33,7 +33,7 @@ BEGIN
         r.Area,
         r.BasePrice AS RentPrice,
         CASE WHEN activeContract.Id IS NOT NULL THEN 1 ELSE CAST(ISNULL(r.Status, 0) AS INT) END AS Status,
-        ISNULL(t.FullName, N'Chua co') AS CurrentTenantName,
+        ISNULL(t.FullName, N'Chưa có') AS CurrentTenantName,
         activeContract.Id AS CurrentContractId
     FROM dbo.Rooms AS r
     INNER JOIN dbo.Buildings AS b ON b.Id = r.BuildingId
@@ -138,7 +138,7 @@ BEGIN
     IF ISNULL(@Status, (SELECT Status FROM dbo.Rooms WHERE Id = @Id)) = 0
        AND EXISTS (SELECT 1 FROM dbo.Contracts WHERE RoomId = @Id AND ISNULL(Status, 0) = 1)
     BEGIN
-        RAISERROR(N'Phong dang co hop dong hieu luc, khong the chuyen sang Trong. Hay ket thuc hoac huy hop dong truoc.', 16, 1);
+        RAISERROR(N'Phòng đang có hợp đồng hiệu lực, không thể chuyển sang Trống. Hãy kết thúc hoặc hủy hợp đồng trước.', 16, 1);
         RETURN;
     END
 
@@ -165,7 +165,7 @@ BEGIN
     IF @Status = 0
        AND EXISTS (SELECT 1 FROM dbo.Contracts WHERE RoomId = @Id AND ISNULL(Status, 0) = 1)
     BEGIN
-        RAISERROR(N'Phong dang co hop dong hieu luc, khong the chuyen sang Trong. Hay ket thuc hoac huy hop dong truoc.', 16, 1);
+        RAISERROR(N'Phòng đang có hợp đồng hiệu lực, không thể chuyển sang Trống. Hãy kết thúc hoặc hủy hợp đồng trước.', 16, 1);
         RETURN;
     END
 

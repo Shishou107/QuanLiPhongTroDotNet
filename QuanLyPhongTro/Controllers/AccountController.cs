@@ -60,7 +60,7 @@ public class AccountController : Controller
                 return RedirectToAction("Index", "Dashboard");
             }
 
-            ModelState.AddModelError("", result?.Message ?? "Ten dang nhap hoac mat khau khong dung");
+            ModelState.AddModelError("", result?.Message ?? "Tên đăng nhập hoặc mật khẩu không đúng");
         }
 
         return View(model);
