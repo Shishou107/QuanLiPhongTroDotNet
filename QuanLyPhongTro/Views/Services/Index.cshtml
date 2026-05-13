@@ -1,0 +1,40 @@
+@model IEnumerable<QuanLyPhongTro.Models.ViewModels.ServiceListViewModel>
+@{
+    ViewData["Title"] = "Quản lý dịch vụ";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Danh sách dịch vụ</h4>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Thêm dịch vụ mới</a>
+</div>
+
+<div class="row">
+    @foreach (var item in Model)
+    {
+        <div class="col-md-3 mb-4">
+            <div class="card h-100 border-0 shadow-sm service-card">
+                <div class="card-body text-center py-4">
+                    <div class="service-icon mb-3">
+                        @if (item.Name.Contains("Điện")) { <i class="fas fa-bolt text-warning fa-3x"></i> }
+                        else if (item.Name.Contains("Nước")) { <i class="fas fa-tint text-primary fa-3x"></i> }
+                        else if (item.Name.Contains("Wifi") || item.Name.Contains("Internet")) { <i class="fas fa-wifi text-info fa-3x"></i> }
+                        else { <i class="fas fa-concierge-bell text-secondary fa-3x"></i> }
+                    </div>
+                    <h5 class="card-title">@item.Name</h5>
+                    <div class="h4 fw-bold text-primary mb-2">@item.DefaultPrice.ToString("N0") ₫</div>
+                    <div class="text-muted small">Đơn vị: @item.Unit</div>
+                </div>
+                <div class="card-footer bg-white border-top-0 d-flex justify-content-center pb-3">
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-2 px-3">Sửa</a>
+                    <button class="btn btn-sm btn-outline-danger px-3">Xóa</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .service-card { transition: transform 0.2s; }
+    .service-card:hover { transform: translateY(-5px); }
+    .service-icon { height: 60px; display: flex; align-items: center; justify-content: center; }
+</style>

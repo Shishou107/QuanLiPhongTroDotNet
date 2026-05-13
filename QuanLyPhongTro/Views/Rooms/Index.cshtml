@@ -1,0 +1,103 @@
+@model IEnumerable<QuanLyPhongTro.Models.ViewModels.RoomListViewModel>
+@{
+    ViewData["Title"] = "Danh sách phòng";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Quản lý phòng</h4>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Thêm phòng mới</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <select name="buildingId" class="form-select" asp-items="ViewBag.Buildings" onchange="this.form.submit()">
+                    <option value="">-- Tất cả tòa nhà --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Trạng thái --</option>
+                    <option value="0" selected="@(ViewBag.Status == 0)">Trống</option>
+                    <option value="1" selected="@(ViewBag.Status == 1)">Đang thuê</option>
+                    <option value="2" selected="@(ViewBag.Status == 2)">Bảo trì</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <input type="text" name="keyword" class="form-control" placeholder="Số phòng..." value="@ViewBag.Keyword">
+                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Số phòng</th>
+                        <th>Tòa nhà</th>
+                        <th>Diện tích</th>
+                        <th>Giá thuê</th>
+                        <th>Trạng thái</th>
+                        <th>Khách thuê</th>
+                        <th class="text-end">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="fw-bold">@item.RoomNumber</span></td>
+                            <td>@item.BuildingName</td>
+                            <td>@(item.Area?.ToString("N1") ?? "0") m²</td>
+                            <td class="fw-bold text-primary">@item.RentPrice.ToString("N0") ₫</td>
+                            <td>
+                                @if (item.Status == 0) { <span class="badge badge-room-empty">Trống</span> }
+                                else if (item.Status == 1) { <span class="badge badge-room-rented">Đang thuê</span> }
+                                else { <span class="badge badge-room-maintenance">Bảo trì</span> }
+                            </td>
+                            <td><span class="small">@(item.CurrentTenantName ?? "--")</span></td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info"><i class="fas fa-edit"></i></a>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (ViewBag.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center mt-4 gap-2">
+                @if (ViewBag.CurrentPage > 1)
+                {
+                    <a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-buildingId="@ViewBag.BuildingId" asp-route-status="@ViewBag.Status" asp-route-keyword="@ViewBag.Keyword" class="rounded-circle btn btn-primary px-3 py-2">&laquo;</a>
+                }
+
+                @{
+                    int startPage = Math.Max(1, ViewBag.CurrentPage - 1);
+                    int endPage = Math.Min(ViewBag.TotalPages, startPage + 2);
+                    if (endPage - startPage < 2 && startPage > 1)
+                    {
+                        startPage = Math.Max(1, endPage - 2);
+                    }
+                }
+
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    <a asp-action="Index" asp-route-page="@i" asp-route-buildingId="@ViewBag.BuildingId" asp-route-status="@ViewBag.Status" asp-route-keyword="@ViewBag.Keyword" class="rounded-circle btn @(ViewBag.CurrentPage == i ? "btn-primary active" : "btn-outline-primary") px-3 py-2">@i</a>
+                }
+
+                @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                {
+                    <a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-buildingId="@ViewBag.BuildingId" asp-route-status="@ViewBag.Status" asp-route-keyword="@ViewBag.Keyword" class="rounded-circle btn btn-primary px-3 py-2">&raquo;</a>
+                }
+            </div>
+        }
+    </div>
+</div>

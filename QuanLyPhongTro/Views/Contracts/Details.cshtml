@@ -1,0 +1,187 @@
+@model QuanLyPhongTro.Models.ViewModels.ContractDetailViewModel
+@{
+    ViewData["Title"] = "Chi tiết hợp đồng " + Model.ContractCode;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a asp-action="Index">Hợp đồng</a></li>
+                <li class="breadcrumb-item active">@Model.ContractCode</li>
+            </ol>
+        </nav>
+        <h4 class="mb-0">Hợp đồng #@Model.ContractCode</h4>
+    </div>
+    <div class="btn-group">
+        <a asp-action="Print" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-secondary"><i class="fas fa-print me-2"></i>In hợp đồng</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary ms-2"><i class="fas fa-edit me-2"></i>Gia hạn / Sửa</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Nội dung thỏa thuận</h6>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="small text-muted mb-1">Ngày bắt đầu:</div>
+                        <div class="fw-bold h5">@Model.StartDate.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted mb-1">Ngày kết thúc:</div>
+                        <div class="fw-bold h5">@Model.EndDate.ToString("dd/MM/yyyy")</div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="small text-muted mb-1">Giá thuê hàng tháng:</div>
+                        <div class="fw-bold h4 text-primary">@Model.RentPrice.ToString("N0") ₫</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted mb-1">Tiền đặt cọc:</div>
+                        <div class="fw-bold h4 text-success">@Model.DepositAmount.ToString("N0") ₫</div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded">
+                    <div class="small text-muted mb-2">Tóm tắt tài chính hợp đồng:</div>
+                    <div class="row text-center">
+                        <div class="col-4 border-end">
+                            <div class="small text-muted">Tổng phát sinh</div>
+                            <div class="fw-bold">@Model.TotalInvoiceAmount.ToString("N0") ₫</div>
+                        </div>
+                        <div class="col-4 border-end">
+                            <div class="small text-muted">Đã thanh toán</div>
+                            <div class="fw-bold text-success">@Model.TotalPaidAmount.ToString("N0") ₫</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted">Còn nợ</div>
+                            <div class="fw-bold text-danger">@Model.TotalDebtAmount.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Danh sách hóa đơn của hợp đồng</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Kỳ hạn</th>
+                                <th class="text-end">Tổng tiền</th>
+                                <th class="text-end">Đã trả</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-4">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Invoices.Any())
+                            {
+                                <tr><td colspan="5" class="text-center py-4 text-muted">Chưa có hóa đơn phát sinh</td></tr>
+                            }
+                            @foreach (var inv in Model.Invoices)
+                            {
+                                <tr>
+                                    <td class="ps-4">@inv.BillingMonth/@inv.BillingYear</td>
+                                    <td class="text-end fw-bold">@inv.TotalAmount.ToString("N0") ₫</td>
+                                    <td class="text-end text-success">@inv.PaidAmount.ToString("N0") ₫</td>
+                                    <td>
+                                        @if (inv.Status == 0) { <span class="badge badge-invoice-unpaid">Chưa trả</span> }
+                                        else if (inv.Status == 1) { <span class="badge badge-invoice-partial">Một phần</span> }
+                                        else if (inv.Status == 2) { <span class="badge badge-invoice-paid">Đã xong</span> }
+                                        else { <span class="badge badge-invoice-overdue">Quá hạn</span> }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a asp-controller="Invoices" asp-action="Details" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Lịch sử thanh toán của hợp đồng</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Ngày</th>
+                                <th>Mã HĐ</th>
+                                <th class="text-end">Số tiền</th>
+                                <th>Phương thức</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Payments.Any())
+                            {
+                                <tr><td colspan="4" class="text-center py-4 text-muted">Chưa có lịch sử thanh toán</td></tr>
+                            }
+                            @foreach (var p in Model.Payments)
+                            {
+                                <tr>
+                                    <td class="ps-4">@p.PaymentDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="fw-bold">#@p.InvoiceCode</td>
+                                    <td class="text-end fw-bold text-success">@p.Amount.ToString("N0") ₫</td>
+                                    <td>@p.Method</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Các bên liên quan</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <div class="small text-muted mb-2">Trạng thái hợp đồng:</div>
+                    @if (Model.Status == 1) { <span class="badge bg-success p-2 w-100">Đang hiệu lực</span> }
+                    else if (Model.Status == 2) { <span class="badge bg-secondary p-2 w-100">Đã thanh lý</span> }
+                    else { <span class="badge bg-warning p-2 w-100">Chờ duyệt</span> }
+                </div>
+
+                <div class="mb-4">
+                    <div class="small text-muted mb-2">Khách thuê:</div>
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="https://ui-avatars.com/api/?name=@Model.Tenant.FullName&background=0D8ABC&color=fff" class="rounded-circle me-2" width="40" height="40">
+                        <div>
+                            <a asp-controller="Tenants" asp-action="Details" asp-route-id="@Model.Tenant.Id" class="fw-bold text-decoration-none">@Model.Tenant.FullName</a>
+                            <div class="small text-muted">@Model.Tenant.PhoneNumber</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="small text-muted mb-2">Phòng thuê:</div>
+                    <div class="p-3 border rounded">
+                        <div class="fw-bold h5 mb-1"><i class="fas fa-door-open me-2 text-primary"></i> @Model.Room.RoomNumber</div>
+                        <div class="small text-muted">@Model.Room.BuildingName</div>
+                        <hr>
+                        <a asp-controller="Rooms" asp-action="Details" asp-route-id="@Model.Room.Id" class="btn btn-sm btn-outline-primary w-100">Xem thông tin phòng</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+</div>

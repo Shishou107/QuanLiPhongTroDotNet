@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Báo cáo thống kê";
+    var occupancy = ViewBag.Occupancy as List<QuanLyPhongTro.Models.ViewModels.ReportOccupancyViewModel> ?? new();
+    var revenue = ViewBag.Revenue as List<QuanLyPhongTro.Models.ViewModels.MonthlyRevenueItem> ?? new();
+}
+
+<div class="mb-4">
+    <h4 class="mb-0">Báo cáo & Thống kê</h4>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Doanh thu theo tháng</div>
+            <div class="card-body">
+                <div class="chart-box chart-box-lg">
+                    <canvas id="reportRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Tỷ lệ lấp đầy phòng</div>
+            <div class="card-body">
+                <div class="chart-box chart-box-sm">
+                    <canvas id="reportOccupancyChart"></canvas>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0 py-3">
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in occupancy)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            @item.StatusText
+                            <span class="badge bg-primary rounded-pill">@item.Count</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const ctxRev = document.getElementById('reportRevenueChart').getContext('2d');
+        new Chart(ctxRev, {
+            type: 'bar',
+            data: {
+                labels: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'],
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: [
+                        @string.Join(",", Enumerable.Range(1, 12).Select(m => revenue.FirstOrDefault(i => i.Month == m)?.TotalInvoiceAmount ?? 0))
+
+                    ],
+                    backgroundColor: '#0d6efd',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        const ctxOcc = document.getElementById('reportOccupancyChart').getContext('2d');
+        new Chart(ctxOcc, {
+            type: 'pie',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(occupancy.Select(o => o.StatusText))),
+                datasets: [{
+                    data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(occupancy.Select(o => o.Count))),
+                    backgroundColor: ['#198754', '#0d6efd', '#ffc107', '#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+}
+
+<style>
+    .chart-box {
+        position: relative;
+        width: 100%;
+    }
+
+    .chart-box-lg {
+        height: 360px;
+    }
+
+    .chart-box-sm {
+        height: 240px;
+    }
+
+    .chart-box canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+    }
+</style>

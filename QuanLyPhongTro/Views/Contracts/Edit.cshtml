@@ -1,0 +1,77 @@
+@model QuanLyPhongTro.Models.ViewModels.ContractEditViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa hợp đồng";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Chỉnh sửa hợp đồng</h4>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Quay lại chi tiết</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TenantId" class="form-label">Khách thuê</label>
+                    <select asp-for="TenantId" asp-items="ViewBag.Tenants" class="form-select">
+                        <option value="">Chọn khách thuê</option>
+                    </select>
+                    <span asp-validation-for="TenantId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="RoomId" class="form-label">Phòng</label>
+                    <select asp-for="RoomId" asp-items="ViewBag.Rooms" class="form-select">
+                        <option value="">Chọn phòng</option>
+                    </select>
+                    <span asp-validation-for="RoomId" class="text-danger"></span>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label asp-for="StartDate" class="form-label">Ngày bắt đầu</label>
+                    <input asp-for="StartDate" class="form-control" type="date" />
+                    <span asp-validation-for="StartDate" class="text-danger"></span>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label asp-for="EndDate" class="form-label">Ngày kết thúc</label>
+                    <input asp-for="EndDate" class="form-control" type="date" />
+                    <span asp-validation-for="EndDate" class="text-danger"></span>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label asp-for="Status" class="form-label">Trạng thái</label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="1">Đang hiệu lực</option>
+                        <option value="2">Đã thanh lý</option>
+                        <option value="0">Hết hạn</option>
+                        <option value="-1">Đã hủy</option>
+                    </select>
+                    <span asp-validation-for="Status" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="RentPrice" class="form-label">Giá thuê</label>
+                    <input asp-for="RentPrice" class="form-control" type="number" min="0" step="1000" />
+                    <span asp-validation-for="RentPrice" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="DepositAmount" class="form-label">Tiền cọc</label>
+                    <input asp-for="DepositAmount" class="form-control" type="number" min="0" step="1000" />
+                    <span asp-validation-for="DepositAmount" class="text-danger"></span>
+                </div>
+                <div class="col-12 mb-3">
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary px-5">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

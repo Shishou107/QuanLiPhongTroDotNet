@@ -1,0 +1,51 @@
+@model QuanLyPhongTro.Models.ViewModels.RoomCreateViewModel
+@{
+    ViewData["Title"] = "Them phong";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Them phong</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary">Quay lai</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="BuildingId" class="form-label"></label>
+                    <select asp-for="BuildingId" asp-items="ViewBag.Buildings" class="form-select">
+                        <option value="">Chon toa nha</option>
+                    </select>
+                    <span asp-validation-for="BuildingId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="RoomNumber" class="form-label"></label>
+                    <input asp-for="RoomNumber" class="form-control" />
+                    <span asp-validation-for="RoomNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Area" class="form-label"></label>
+                    <input asp-for="Area" class="form-control" type="number" min="0" step="0.1" />
+                    <span asp-validation-for="Area" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="BasePrice" class="form-label"></label>
+                    <input asp-for="BasePrice" class="form-control" type="number" min="0" step="1000" />
+                    <span asp-validation-for="BasePrice" class="text-danger"></span>
+                </div>
+                <div class="col-12 mb-3">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Luu</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,96 @@
+@model QuanLyPhongTro.Models.ViewModels.ContractDetailViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hợp đồng thuê phòng - @Model.ContractCode</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14pt; padding: 50px; }
+        .contract-header { text-align: center; margin-bottom: 30px; }
+        .contract-title { font-size: 18pt; font-weight: bold; text-transform: uppercase; margin-top: 20px; }
+        .section-title { font-weight: bold; margin-top: 20px; text-decoration: underline; }
+        .footer-sig { margin-top: 50px; }
+        @@media print {
+            .no-print { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print text-center mb-4">
+        <button onclick="window.print()" class="btn btn-primary btn-lg">In hợp đồng</button>
+        <button onclick="window.close()" class="btn btn-outline-secondary btn-lg">Đóng</button>
+    </div>
+
+    <div class="contract-header">
+        <div><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></div>
+        <div>Độc lập - Tự do - Hạnh phúc</div>
+        <hr style="width: 200px; margin: 10px auto;">
+        <div class="contract-title">HỢP ĐỒNG THUÊ PHÒNG TRỌ</div>
+        <div>Số: @Model.ContractCode / HĐTP</div>
+    </div>
+
+    <p>Hôm nay, ngày @DateTime.Now.Day tháng @DateTime.Now.Month năm @DateTime.Now.Year, chúng tôi gồm:</p>
+
+    <div class="section-title">BÊN CHO THUÊ (BÊN A):</div>
+    <p>
+        Ông/Bà: ........................................................................................................................<br>
+        Số CMND/CCCD: ..................................... Ngày cấp: ......................... Nơi cấp: ........................<br>
+        Địa chỉ: ........................................................................................................................<br>
+        Điện thoại: ....................................................................................................................
+    </p>
+
+    <div class="section-title">BÊN THUÊ (BÊN B):</div>
+    <p>
+        Ông/Bà: <strong>@Model.Tenant.FullName</strong><br>
+        Số CMND/CCCD: <strong>@Model.Tenant.IdentityNumber</strong><br>
+        Địa chỉ thường trú: <strong>@Model.Tenant.Address</strong><br>
+        Điện thoại: <strong>@Model.Tenant.PhoneNumber</strong>
+    </p>
+
+    <div class="section-title">ĐIỀU 1: NỘI DUNG HỢP ĐỒNG</div>
+    <p>
+        Bên A đồng ý cho bên B thuê phòng số: <strong>@Model.Room.RoomNumber</strong> thuộc tòa nhà: <strong>@Model.Room.BuildingName</strong>.<br>
+        Thời hạn thuê là: ............ tháng kể từ ngày <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong> đến ngày <strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong>.
+    </p>
+
+    <div class="section-title">ĐIỀU 2: GIÁ CẢ VÀ PHƯƠNG THỨC THANH TOÁN</div>
+    <p>
+        - Giá thuê phòng là: <strong>@Model.RentPrice.ToString("N0") VNĐ</strong> / tháng.<br>
+        - Tiền đặt cọc: <strong>@Model.DepositAmount.ToString("N0") VNĐ</strong>.<br>
+        - Tiền điện, nước và các dịch vụ khác sẽ được tính theo chỉ số tiêu thụ thực tế hàng tháng.
+    </p>
+
+    <div class="section-title">ĐIỀU 3: TRÁCH NHIỆM CỦA CÁC BÊN</div>
+    <p>
+        - Bên B có trách nhiệm bảo quản tài sản trong phòng, không được thay đổi cấu trúc phòng.<br>
+        - Bên B phải tuân thủ các quy định về an ninh trật tự, phòng cháy chữa cháy.<br>
+        - Bên A có trách nhiệm đảm bảo cung cấp điện, nước đầy đủ cho bên B.
+    </p>
+
+    <div class="row footer-sig text-center">
+        <div class="col-6">
+            <strong>ĐẠI DIỆN BÊN A</strong><br>
+            (Ký và ghi rõ họ tên)
+            <div style="height: 100px;"></div>
+        </div>
+        <div class="col-6">
+            <strong>ĐẠI DIỆN BÊN B</strong><br>
+            (Ký và ghi rõ họ tên)
+            <div style="height: 100px;"></div>
+            <strong>@Model.Tenant.FullName</strong>
+        </div>
+    </div>
+
+    <script>
+        // Tự động mở hộp thoại in nếu muốn
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

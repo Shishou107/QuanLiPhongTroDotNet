@@ -1,0 +1,115 @@
+@model IEnumerable<QuanLyPhongTro.Models.ViewModels.InvoiceListViewModel>
+@{
+    ViewData["Title"] = "Danh sách hóa đơn";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Quản lý hóa đơn</h4>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Lập hóa đơn mới</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="row g-3 mb-4">
+            <div class="col-md-2">
+                <select name="month" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Tháng --</option>
+                    @for (int i = 1; i <= 12; i++)
+                    {
+                        <option value="@i" selected="@(ViewBag.Month == i)">Tháng @i</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="year" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Năm --</option>
+                    <option value="2026" selected="@(ViewBag.Year == 2026)">2026</option>
+                    <option value="2025" selected="@(ViewBag.Year == 2025)">2025</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Trạng thái --</option>
+                    <option value="0" selected="@(ViewBag.Status == 0)">Chưa thanh toán</option>
+                    <option value="1" selected="@(ViewBag.Status == 1)">Thanh toán một phần</option>
+                    <option value="2" selected="@(ViewBag.Status == 2)">Đã thanh toán</option>
+                    <option value="3" selected="@(ViewBag.Status == 3)">Quá hạn</option>
+                </select>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Mã HĐ</th>
+                        <th>Kỳ hạn</th>
+                        <th>Khách thuê</th>
+                        <th>Phòng</th>
+                        <th class="text-end">Tổng tiền</th>
+                        <th class="text-end">Còn nợ</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="fw-bold">@item.InvoiceCode</span></td>
+                            <td>@item.BillingMonth/@item.BillingYear</td>
+                            <td>@item.TenantName</td>
+                            <td>@item.RoomNumber</td>
+                            <td class="text-end fw-bold">@item.TotalAmount.ToString("N0") ₫</td>
+                            <td class="text-end text-danger fw-bold">@item.DebtAmount.ToString("N0") ₫</td>
+                            <td>
+                                @if (item.Status == 0) { <span class="badge badge-invoice-unpaid">Chưa thanh toán</span> }
+                                else if (item.Status == 1) { <span class="badge badge-invoice-partial">Một phần</span> }
+                                else if (item.Status == 2) { <span class="badge badge-invoice-paid">Đã thanh toán</span> }
+                                else { <span class="badge badge-invoice-overdue">Quá hạn</span> }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                    @if (item.Status != 2)
+                                    {
+                                        <a asp-controller="Payments" asp-action="Create" asp-route-invoiceId="@item.Id" class="btn btn-sm btn-outline-success"><i class="fas fa-hand-holding-usd"></i></a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (ViewBag.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center my-4 gap-2">
+                @if (ViewBag.CurrentPage > 1)
+                {
+                    <a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-month="@ViewBag.Month" asp-route-year="@ViewBag.Year" asp-route-status="@ViewBag.Status" class="rounded-circle btn btn-primary px-3 py-2">&laquo;</a>
+                }
+
+                @{
+                    int startPage = Math.Max(1, ViewBag.CurrentPage - 1);
+                    int endPage = Math.Min(ViewBag.TotalPages, startPage + 2);
+                    if (endPage - startPage < 2 && startPage > 1)
+                    {
+                        startPage = Math.Max(1, endPage - 2);
+                    }
+                }
+
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    <a asp-action="Index" asp-route-page="@i" asp-route-month="@ViewBag.Month" asp-route-year="@ViewBag.Year" asp-route-status="@ViewBag.Status" class="rounded-circle btn @(ViewBag.CurrentPage == i ? "btn-primary active" : "btn-outline-primary") px-3 py-2">@i</a>
+                }
+
+                @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                {
+                    <a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-month="@ViewBag.Month" asp-route-year="@ViewBag.Year" asp-route-status="@ViewBag.Status" class="rounded-circle btn btn-primary px-3 py-2">&raquo;</a>
+                }
+            </div>
+        }
+    </div>
+</div>

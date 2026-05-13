@@ -17,7 +17,7 @@ namespace ApiQuanLyPhongTro.Infrastructure.Repositories
         public async Task<IEnumerable<Invoice>> GetUnpaidInvoicesAsync()
         {
             return await _context.Invoices
-                .Where(i => i.Status == 0 || i.Status == 1) // 0: Chưa đóng, 1: Đóng thiếu
+                .Where(i => i.Status == 0 || i.Status == 1) 
                 .ToListAsync();
         }
 

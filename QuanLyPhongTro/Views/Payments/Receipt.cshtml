@@ -1,0 +1,86 @@
+@model QuanLyPhongTro.Models.ViewModels.PaymentListViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Biên lai thanh toán - #@Model.InvoiceCode</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body { font-family: 'Arial', sans-serif; padding: 30px; background: #f8f9fa; }
+        .receipt-container { 
+            max-width: 600px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border: 1px solid #dee2e6;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+        .receipt-header { border-bottom: 2px solid #0d6efd; margin-bottom: 20px; padding-bottom: 10px; }
+        .amount-big { font-size: 24pt; font-weight: bold; color: #198754; text-align: center; margin: 20px 0; }
+        @@media print {
+            .no-print { display: none; }
+            body { background: white; padding: 0; }
+            .receipt-container { border: none; box-shadow: none; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print text-center mb-4">
+        <button onclick="window.print()" class="btn btn-primary">In biên lai</button>
+        <button onclick="window.close()" class="btn btn-outline-secondary">Đóng</button>
+    </div>
+
+    <div class="receipt-container">
+        <div class="receipt-header d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0 text-primary">BIÊN LAI THANH TOÁN</h4>
+                <div class="text-muted">Mã hóa đơn: #@Model.InvoiceCode</div>
+            </div>
+            <div class="text-end">
+                <div class="fw-bold">HỆ THỐNG QUẢN LÝ PHÒNG TRỌ</div>
+                <div class="small">Ngày: @Model.PaymentDate.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-4 text-muted">Người nộp tiền:</div>
+            <div class="col-8 fw-bold">@Model.TenantName</div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-4 text-muted">Phòng:</div>
+            <div class="col-8">@Model.RoomNumber</div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-4 text-muted">Phương thức:</div>
+            <div class="col-8">@Model.Method</div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-4 text-muted">Nội dung:</div>
+            <div class="col-8 text-wrap">@Model.Note</div>
+        </div>
+
+        <div class="amount-big">
+            @Model.Amount.ToString("N0") VNĐ
+        </div>
+
+        <div class="text-center mt-4 mb-5">
+            <p class="fst-italic">Cảm ơn quý khách đã thanh toán!</p>
+        </div>
+
+        <div class="row text-center mt-4">
+            <div class="col-6">
+                <strong>Người lập phiếu</strong><br>
+                (Ký tên)
+            </div>
+            <div class="col-6">
+                <strong>Người nộp tiền</strong><br>
+                (Ký tên)
+            </div>
+        </div>
+    </div>
+</body>
+</html>

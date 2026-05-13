@@ -57,7 +57,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.DepositAmount)
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Status).HasDefaultValue(1);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasConversion<byte?>();
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Room).WithMany(p => p.Contracts)
@@ -75,6 +77,8 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Invoices__3214EC07FA751D76");
 
+            entity.Property(e => e.BillingMonth).HasConversion<byte>();
+            entity.Property(e => e.BillingYear).HasConversion<short>();
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -82,7 +86,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.PaidAmount)
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Status).HasDefaultValue(0);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(0)
+                .HasConversion<byte?>();
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
@@ -128,7 +134,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.PaymentDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.PaymentMethod).HasDefaultValue(0);
+            entity.Property(e => e.PaymentMethod)
+                .HasDefaultValue(0)
+                .HasConversion<byte?>();
             entity.Property(e => e.ReferenceCode)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -151,7 +159,9 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.RoomNumber).HasMaxLength(50);
-            entity.Property(e => e.Status).HasDefaultValue(0);
+            entity.Property(e => e.Status)
+                .HasDefaultValue(0)
+                .HasConversion<byte?>();
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Building).WithMany(p => p.Rooms)

@@ -1,0 +1,205 @@
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --info-color: #0dcaf0;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --dark-navy: #1a237e;
+    --sidebar-bg: #1a237e;
+    --content-bg: #f8f9fa;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--content-bg);
+    color: #333;
+}
+
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+/* Sidebar */
+#sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background: var(--sidebar-bg);
+    color: #fff;
+    transition: all 0.3s;
+}
+
+#sidebar.active {
+    min-width: 80px;
+    max-width: 80px;
+    text-align: center;
+}
+
+#sidebar .sidebar-header {
+    padding: 16px 14px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-logo-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+    text-decoration: none;
+}
+
+.sidebar-logo {
+    display: block;
+    width: 100%;
+    max-width: 170px;
+    max-height: 58px;
+    object-fit: contain;
+}
+
+#sidebar.active .sidebar-header {
+    padding: 14px 10px;
+}
+
+#sidebar.active .sidebar-logo-link {
+    min-height: 48px;
+}
+
+#sidebar.active .sidebar-logo {
+    max-width: 52px;
+    max-height: 48px;
+}
+
+#sidebar ul.components {
+    padding: 20px 0;
+}
+
+#sidebar ul li a {
+    padding: 12px 20px;
+    font-size: 1.1em;
+    display: block;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+#sidebar ul li a:hover, #sidebar ul li.active > a {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 4px solid var(--info-color);
+}
+
+#sidebar.active ul li a span {
+    display: none;
+}
+
+#sidebar.active ul li a i {
+    font-size: 1.3em;
+}
+
+#sidebar ul li a i {
+    margin-right: 15px;
+    width: 20px;
+}
+
+/* Content */
+#content {
+    width: 100%;
+    min-height: 100vh;
+    transition: all 0.3s;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+}
+
+/* Badges */
+.badge {
+    padding: 0.5em 0.8em;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.badge-room-empty { background-color: var(--success-color); }
+.badge-room-rented { background-color: var(--primary-color); }
+.badge-room-maintenance { background-color: var(--warning-color); }
+
+.badge-contract-active { background-color: var(--success-color); }
+.badge-contract-expired { background-color: var(--secondary-color); }
+.badge-contract-cancelled { background-color: var(--danger-color); }
+
+.badge-invoice-unpaid { background-color: var(--secondary-color); }
+.badge-invoice-partial { background-color: var(--warning-color); }
+.badge-invoice-paid { background-color: var(--success-color); }
+.badge-invoice-overdue { background-color: var(--danger-color); }
+
+/* Tables */
+.table thead th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    color: #666;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.03);
+}
+
+/* Dashboard Stat Cards */
+.stat-card {
+    position: relative;
+    padding: 1.5rem;
+}
+
+.stat-card .icon {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 2.5rem;
+    opacity: 0.2;
+}
+
+.stat-card .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+
+.stat-card .label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Form Styles */
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.btn {
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+}

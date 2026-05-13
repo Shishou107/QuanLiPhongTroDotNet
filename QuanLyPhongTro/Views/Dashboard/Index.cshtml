@@ -1,0 +1,233 @@
+@model QuanLyPhongTro.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Tổng quan";
+}
+
+<div class="row">
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card bg-primary text-white border-0">
+            <div class="stat-card-body">
+                <div class="label opacity-75 text-white">Tổng số phòng</div>
+                <div class="value">@Model.TotalRooms</div>
+                <div class="icon"><i class="fas fa-door-open"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card bg-success text-white border-0">
+            <div class="stat-card-body">
+                <div class="label opacity-75 text-white">Phòng đang thuê</div>
+                <div class="value">@Model.RentedRooms</div>
+                <div class="icon"><i class="fas fa-user-check"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card bg-info text-white border-0">
+            <div class="stat-card-body">
+                <div class="label opacity-75 text-white">Phòng trống</div>
+                <div class="value">@Model.EmptyRooms</div>
+                <div class="icon"><i class="fas fa-bed"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card bg-danger text-white border-0">
+            <div class="stat-card-body">
+                <div class="label opacity-75 text-white">Hóa đơn quá hạn</div>
+                <div class="value">@Model.OverdueInvoices</div>
+                <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Doanh thu theo tháng (@DateTime.Today.Year)</span>
+                <i class="fas fa-chart-line text-muted"></i>
+            </div>
+            <div class="card-body">
+                <div class="chart-box chart-box-lg">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                Tình trạng phòng
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="chart-box chart-box-sm">
+                    <canvas id="roomStatusChart"></canvas>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0 text-center pb-4">
+                <div class="row">
+                    <div class="col-4">
+                        <div class="small text-muted">Trống</div>
+                        <div class="fw-bold text-success">@Model.EmptyRooms</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-muted">Đang thuê</div>
+                        <div class="fw-bold text-primary">@Model.RentedRooms</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-muted">Bảo trì</div>
+                        <div class="fw-bold text-warning">@Model.MaintenanceRooms</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Hóa đơn chưa thanh toán
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Mã HĐ</th>
+                                <th>Khách thuê</th>
+                                <th>Phòng</th>
+                                <th>Tổng tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.RecentInvoices.Any())
+                            {
+                                <tr><td colspan="4" class="text-center py-3 text-muted">Không có dữ liệu</td></tr>
+                            }
+                            @foreach (var inv in Model.RecentInvoices)
+                            {
+                                <tr>
+                                    <td><span class="fw-bold">@inv.InvoiceCode</span></td>
+                                    <td>@inv.TenantName</td>
+                                    <td>@inv.RoomNumber</td>
+                                    <td class="text-danger fw-bold">@inv.TotalAmount.ToString("N0") ₫</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Phòng trống sẵn sàng
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Số phòng</th>
+                                <th>Tòa nhà</th>
+                                <th>Giá thuê</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.AvailableRooms.Any())
+                            {
+                                <tr><td colspan="4" class="text-center py-3 text-muted">Hết phòng trống</td></tr>
+                            }
+                            @foreach (var room in Model.AvailableRooms)
+                            {
+                                <tr>
+                                    <td><span class="fw-bold">@room.RoomNumber</span></td>
+                                    <td>@room.BuildingName</td>
+                                    <td>@room.RentPrice.ToString("N0") ₫</td>
+                                    <td><a asp-controller="Contracts" asp-action="Create" asp-route-roomId="@room.Id" class="btn btn-sm btn-outline-primary">Lập HĐ</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctxRevenue, {
+            type: 'line',
+            data: {
+                labels: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'],
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: [
+                        @string.Join(",", Enumerable.Range(1, 12).Select(m => Model.MonthlyRevenueItems.FirstOrDefault(i => i.Month == m)?.TotalInvoiceAmount ?? 0))
+
+                    ],
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        const ctxStatus = document.getElementById('roomStatusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: ['Trống', 'Đang thuê', 'Bảo trì'],
+                datasets: [{
+                    data: [@Model.EmptyRooms, @Model.RentedRooms, @Model.MaintenanceRooms],
+                    backgroundColor: ['#198754', '#0d6efd', '#ffc107']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+}
+
+<style>
+    .chart-box {
+        position: relative;
+        width: 100%;
+    }
+
+    .chart-box-lg {
+        height: 300px;
+    }
+
+    .chart-box-sm {
+        height: 220px;
+        max-width: 280px;
+    }
+
+    .chart-box canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+    }
+</style>

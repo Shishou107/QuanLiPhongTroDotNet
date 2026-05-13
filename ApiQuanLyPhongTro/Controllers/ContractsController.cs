@@ -1,114 +1,257 @@
-﻿using ApiQuanLyPhongTro.Application.Interfaces;
-using ApiQuanLyPhongTro.Entities;
-using ApiQuanLyPhongTro.Infrastructure.Data;
+using System.Data;
+using ApiQuanLyPhongTro.Application.Common;
+using ApiQuanLyPhongTro.Application.DTO;
+using ApiQuanLyPhongTro.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 
-namespace ApiQuanLyPhongTro.Controllers
+namespace ApiQuanLyPhongTro.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ContractsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ContractsController : ControllerBase
+    private readonly AdoNetDb _db;
+
+    public ContractsController(AdoNetDb db)
     {
-        private readonly IGenericRepository<Contract> _contractRepo;
-        private readonly AppDbContext _AppDbContext;
+        _db = db;
+    }
 
-        public ContractsController(IGenericRepository<Contract> contractRepo, AppDbContext appDbContext )
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] string? keyword, [FromQuery] Guid? roomId, [FromQuery] Guid? tenantId, [FromQuery] int? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        var items = new List<ContractListDto>();
+
+        await using var connection = _db.CreateConnection();
+        await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Contracts_GetAll");
+        command.Parameters.Add("@Keyword", SqlDbType.NVarChar, 100).Value = SqlParameterValue.FromString(keyword);
+        command.Parameters.Add("@RoomId", SqlDbType.UniqueIdentifier).Value = SqlParameterValue.FromNullable(roomId);
+        command.Parameters.Add("@TenantId", SqlDbType.UniqueIdentifier).Value = SqlParameterValue.FromNullable(tenantId);
+        command.Parameters.Add("@Status", SqlDbType.Int).Value = SqlParameterValue.FromNullable(status);
+        command.Parameters.Add("@Page", SqlDbType.Int).Value = page;
+        command.Parameters.Add("@PageSize", SqlDbType.Int).Value = pageSize;
+        var totalItemsParameter = command.Parameters.Add("@TotalItems", SqlDbType.Int);
+        totalItemsParameter.Direction = ParameterDirection.Output;
+
+        await connection.OpenAsync();
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
         {
-            _contractRepo = contractRepo;
-            _AppDbContext = appDbContext;
+            items.Add(MapContractList(reader));
         }
 
-        [HttpGet]
-        // Trong GenericRepository.cs hoặc ContractRepository.cs
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        await reader.CloseAsync();
+
+        return Ok(ApiResponse<object>.SuccessResult(new PaginationResult<ContractListDto>
         {
-            try
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = (int)totalItemsParameter.Value
+        }));
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        ContractDetailDto? contract = null;
+
+        await using var connection = _db.CreateConnection();
+        await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Contracts_GetById");
+        command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
+
+        await connection.OpenAsync();
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (await reader.ReadAsync())
+        {
+            contract = new ContractDetailDto
             {
-                var contracts = await _AppDbContext.Contracts
-                    .Include(c => c.Room)   // Vẫn cần Include để lấy data
-                    .Include(c => c.Tenant)
-                    .Select(c => new
-                    {
-                        // Chỉ lấy những trường phẳng, không lôi nguyên Object
-                        Id = c.Id,
-                        ContractNumber = c.Id,
-                        TenantName = c.Tenant != null ? c.Tenant.FullName : "N/A",
-                        RoomNumber = c.Room != null ? c.Room.RoomNumber : "N/A",
-                        StartDate = c.StartDate,
-                        EndDate = c.EndDate,
-                        DepositAmount = c.DepositAmount,
-                        Status = c.Status
-                    })
-                    .ToListAsync();
-
-                return Ok(contracts);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Lỗi xử lý dữ liệu", detail = ex.Message });
-            }
+                Id = reader.GetGuidValue("Id"),
+                ContractCode = reader.GetNullableStringValue("ContractCode"),
+                StartDate = reader.GetDateOnlyValue("StartDate"),
+                EndDate = reader.GetDateOnlyValue("EndDate"),
+                RentPrice = reader.GetDecimalValue("RentPrice"),
+                DepositAmount = reader.GetDecimalValue("DepositAmount"),
+                Status = reader.GetIntValue("Status"),
+                TotalInvoiceAmount = reader.GetDecimalValue("TotalInvoiceAmount"),
+                TotalPaidAmount = reader.GetDecimalValue("TotalPaidAmount"),
+                TotalDebtAmount = reader.GetDecimalValue("TotalDebtAmount")
+            };
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(Guid id)
+        if (contract == null)
         {
-            var contract = await _contractRepo.GetByIdAsync(id);
-            if (contract == null) return NotFound();
-            return Ok(contract);
+            return NotFound(ApiResponse.FailureResult("Khong tim thay hop dong"));
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create(Contract contract)
+        if (await reader.NextResultAsync() && await reader.ReadAsync())
         {
-            // 1. Lưu hợp đồng mới
-            await _contractRepo.AddAsync(contract);
-
-            // 2. Cập nhật trạng thái phòng thành 1 (Đã thuê)
-            var room = await _AppDbContext.Rooms.FindAsync(contract.RoomId);
-            if (room != null)
+            contract.Tenant = new TenantListDto
             {
-                room.Status = 1; // 1 = Đã thuê
-                _AppDbContext.Rooms.Update(room);
-                await _AppDbContext.SaveChangesAsync();
-            }
-
-            return Ok(new { message = "Tạo hợp đồng thành công!" });
+                Id = reader.GetGuidValue("Id"),
+                FullName = reader.GetStringValue("FullName"),
+                PhoneNumber = reader.GetStringValue("PhoneNumber"),
+                Email = reader.GetNullableStringValue("Email"),
+                IdentityNumber = reader.GetStringValue("IdentityNumber"),
+                Address = reader.GetNullableStringValue("Address")
+            };
         }
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, Contract contract)
+
+        if (await reader.NextResultAsync() && await reader.ReadAsync())
         {
-            if (id != contract.Id) return BadRequest();
-            await _contractRepo.UpdateAsync(contract);
-            return Ok("Cập nhật hợp đồng thành công!");
+            contract.Room = new RoomListDto
+            {
+                Id = reader.GetGuidValue("Id"),
+                RoomNumber = reader.GetStringValue("RoomNumber"),
+                BuildingId = reader.GetGuidValue("BuildingId"),
+                BuildingName = reader.GetStringValue("BuildingName"),
+                Area = reader.GetNullableDecimalValue("Area"),
+                RentPrice = reader.GetDecimalValue("RentPrice"),
+                Status = reader.GetIntValue("Status")
+            };
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        if (await reader.NextResultAsync())
         {
-            // 1. Tìm hợp đồng trước để lấy mã Phòng (RoomId)
-            var contract = await _AppDbContext.Contracts.FindAsync(id);
-            if (contract == null)
+            while (await reader.ReadAsync())
             {
-                return NotFound("Không tìm thấy hợp đồng này.");
+                contract.Invoices.Add(new InvoiceListDto
+                {
+                    Id = reader.GetGuidValue("Id"),
+                    InvoiceCode = reader.GetNullableStringValue("InvoiceCode"),
+                    BillingMonth = reader.GetIntValue("BillingMonth"),
+                    BillingYear = reader.GetIntValue("BillingYear"),
+                    TotalAmount = reader.GetDecimalValue("TotalAmount"),
+                    PaidAmount = reader.GetDecimalValue("PaidAmount"),
+                    Status = reader.GetIntValue("Status")
+                });
             }
-
-            var roomId = contract.RoomId;
-
-            // 2. Tiến hành xóa hợp đồng
-            await _contractRepo.DeleteAsync(id);
-
-            // 3. Cập nhật trạng thái phòng thành 0 hoặc 2
-            var room = await _AppDbContext.Rooms.FindAsync(roomId);
-            if (room != null)
-            {
-                room.Status = 2; // Bạn có thể để 0 (Trống) hoặc 2 (Chờ dọn) tùy ý
-                _AppDbContext.Rooms.Update(room);
-                await _AppDbContext.SaveChangesAsync();
-            }
-
-            return Ok(new { message = "Xóa hợp đồng và trả phòng thành công!" });
         }
+
+        if (await reader.NextResultAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                contract.Payments.Add(new PaymentDto
+                {
+                    Id = reader.GetGuidValue("Id"),
+                    InvoiceId = reader.GetGuidValue("InvoiceId"),
+                    InvoiceCode = reader.GetNullableStringValue("InvoiceCode"),
+                    Amount = reader.GetDecimalValue("Amount"),
+                    PaymentDate = reader.GetNullableDateTimeValue("PaymentDate"),
+                    Method = reader.GetNullableStringValue("Method") ?? string.Empty,
+                    Note = reader.GetNullableStringValue("Note")
+                });
+            }
+        }
+
+        return Ok(ApiResponse<object>.SuccessResult(contract));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateContractDto dto)
+    {
+        try
+        {
+            await using var connection = _db.CreateConnection();
+            await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Contracts_Create");
+            AddCreateContractParameters(command, dto);
+            var idParameter = command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier);
+            idParameter.Direction = ParameterDirection.Output;
+
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+
+            var id = (Guid)idParameter.Value;
+            return CreatedAtAction(nameof(GetById), new { id }, ApiResponse<Guid>.SuccessResult(id, "Tao hop dong thanh cong"));
+        }
+        catch (SqlException ex)
+        {
+            return BadRequest(ApiResponse.FailureResult(ex.Message));
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, UpdateContractDto dto)
+    {
+        await using var connection = _db.CreateConnection();
+        await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Contracts_Update");
+        command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
+        command.Parameters.Add("@StartDate", SqlDbType.Date).Value = dto.StartDate.ToDateTime(TimeOnly.MinValue);
+        command.Parameters.Add("@EndDate", SqlDbType.Date).Value = dto.EndDate.ToDateTime(TimeOnly.MinValue);
+        command.Parameters.Add("@RentPrice", SqlDbType.Decimal).Value = dto.RentPrice;
+        command.Parameters.Add("@DepositAmount", SqlDbType.Decimal).Value = dto.DepositAmount;
+        command.Parameters.Add("@Status", SqlDbType.Int).Value = dto.Status;
+        command.Parameters.Add("@Note", SqlDbType.NVarChar, -1).Value = SqlParameterValue.FromString(dto.Note);
+
+        await connection.OpenAsync();
+        var rowsAffected = await command.ExecuteNonQueryAsync();
+
+        if (rowsAffected == 0)
+        {
+            return NotFound(ApiResponse.FailureResult("Khong tim thay hop dong"));
+        }
+
+        return Ok(ApiResponse.SuccessResult("Cap nhat hop dong thanh cong"));
+    }
+
+    [HttpPatch("{id}/cancel")]
+    public async Task<IActionResult> Cancel(Guid id)
+    {
+        return await ExecuteContractStatusProcedure(id, "sp_Contracts_Cancel", "Da huy hop dong");
+    }
+
+    [HttpPatch("{id}/finish")]
+    public async Task<IActionResult> Finish(Guid id)
+    {
+        return await ExecuteContractStatusProcedure(id, "sp_Contracts_Finish", "Da ket thuc hop dong");
+    }
+
+    private async Task<IActionResult> ExecuteContractStatusProcedure(Guid id, string procedureName, string successMessage)
+    {
+        await using var connection = _db.CreateConnection();
+        await using var command = _db.CreateStoredProcedureCommand(connection, procedureName);
+        command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
+
+        await connection.OpenAsync();
+        var rowsAffected = await command.ExecuteNonQueryAsync();
+
+        if (rowsAffected == 0)
+        {
+            return NotFound(ApiResponse.FailureResult("Khong tim thay hop dong"));
+        }
+
+        return Ok(ApiResponse.SuccessResult(successMessage));
+    }
+
+    private static void AddCreateContractParameters(SqlCommand command, CreateContractDto dto)
+    {
+        command.Parameters.Add("@TenantId", SqlDbType.UniqueIdentifier).Value = dto.TenantId;
+        command.Parameters.Add("@RoomId", SqlDbType.UniqueIdentifier).Value = dto.RoomId;
+        command.Parameters.Add("@StartDate", SqlDbType.Date).Value = dto.StartDate.ToDateTime(TimeOnly.MinValue);
+        command.Parameters.Add("@EndDate", SqlDbType.Date).Value = dto.EndDate.ToDateTime(TimeOnly.MinValue);
+        command.Parameters.Add("@RentPrice", SqlDbType.Decimal).Value = dto.RentPrice;
+        command.Parameters.Add("@DepositAmount", SqlDbType.Decimal).Value = dto.DepositAmount;
+        command.Parameters.Add("@Note", SqlDbType.NVarChar, -1).Value = SqlParameterValue.FromString(dto.Note);
+    }
+
+    private static ContractListDto MapContractList(SqlDataReader reader)
+    {
+        return new ContractListDto
+        {
+            Id = reader.GetGuidValue("Id"),
+            ContractCode = reader.GetNullableStringValue("ContractCode"),
+            TenantName = reader.GetStringValue("TenantName"),
+            RoomNumber = reader.GetStringValue("RoomNumber"),
+            BuildingName = reader.GetStringValue("BuildingName"),
+            StartDate = reader.GetDateOnlyValue("StartDate"),
+            EndDate = reader.GetDateOnlyValue("EndDate"),
+            RentPrice = reader.GetDecimalValue("RentPrice"),
+            DepositAmount = reader.GetDecimalValue("DepositAmount"),
+            Status = reader.GetIntValue("Status")
+        };
     }
 }

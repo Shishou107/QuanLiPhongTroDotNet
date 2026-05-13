@@ -1,0 +1,183 @@
+@model QuanLyPhongTro.Models.ViewModels.TenantDetailViewModel
+@{
+    ViewData["Title"] = "Hồ sơ khách thuê: " + Model.FullName;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a asp-action="Index">Khách thuê</a></li>
+                <li class="breadcrumb-item active">@Model.FullName</li>
+            </ol>
+        </nav>
+        <h4 class="mb-0">Hồ sơ: @Model.FullName</h4>
+    </div>
+    <div class="btn-group">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="fas fa-edit me-2"></i>Chỉnh sửa</a>
+        <a asp-controller="Contracts" asp-action="Create" asp-route-tenantId="@Model.Id" class="btn btn-primary ms-2"><i class="fas fa-file-contract me-2"></i>Tạo hợp đồng mới</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body text-center py-5">
+                <img src="https://ui-avatars.com/api/?name=@Model.FullName&size=128&background=0D8ABC&color=fff" class="rounded-circle shadow mb-4" width="128" height="128">
+                <h3 class="fw-bold mb-1">@Model.FullName</h3>
+                <p class="text-muted mb-0">Khách thuê phòng</p>
+                <div class="mt-3">
+                    @if (Model.CurrentContract != null) { <span class="badge bg-success">Đang thuê</span> }
+                    else { <span class="badge bg-secondary">Không thuê</span> }
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Thông tin liên lạc</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="small text-muted mb-1">Số điện thoại:</div>
+                    <div class="fw-bold h5">@Model.PhoneNumber</div>
+                </div>
+                <div class="mb-3">
+                    <div class="small text-muted mb-1">Email:</div>
+                    <div class="fw-bold">@(Model.Email ?? "Chưa cung cấp")</div>
+                </div>
+                <div class="mb-3">
+                    <div class="small text-muted mb-1">Số CCCD:</div>
+                    <div class="fw-bold">@Model.IdentityNumber</div>
+                </div>
+                <div class="mb-3">
+                    <div class="small text-muted mb-1">Ngày sinh:</div>
+                    <div class="fw-bold">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa rõ")</div>
+                </div>
+                <div class="mb-0">
+                    <div class="small text-muted mb-1">Địa chỉ thường trú:</div>
+                    <div class="fw-bold small">@(Model.Address ?? "Chưa rõ")</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4 bg-light">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 border-end">
+                        <div class="small text-muted">Đã trả</div>
+                        <div class="fw-bold text-success">@Model.TotalPaidAmount.ToString("N0") ₫</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">Còn nợ</div>
+                        <div class="fw-bold text-danger">@Model.TotalDebtAmount.ToString("N0") ₫</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        @if (Model.CurrentContract != null)
+        {
+            <div class="card shadow-sm border-0 mb-4 border-start border-success border-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">Hợp đồng hiện tại</h6>
+                    <a asp-controller="Contracts" asp-action="Details" asp-route-id="@Model.CurrentContract.Id" class="btn btn-sm btn-link p-0">Chi tiết</a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="small text-muted">Phòng:</div>
+                            <div class="fw-bold h5 text-primary">@Model.CurrentContract.RoomNumber</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted">Thời hạn:</div>
+                            <div class="fw-bold small">@Model.CurrentContract.StartDate.ToString("dd/MM/yyyy") - @Model.CurrentContract.EndDate.ToString("dd/MM/yyyy")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Danh sách hóa đơn</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Hóa đơn</th>
+                                <th>Kỳ hạn</th>
+                                <th class="text-end">Tổng tiền</th>
+                                <th class="text-end">Đã trả</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-4">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Invoices.Any())
+                            {
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có hóa đơn nào</td></tr>
+                            }
+                            @foreach (var inv in Model.Invoices)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold">#@inv.InvoiceCode</td>
+                                    <td>@inv.BillingMonth/@inv.BillingYear</td>
+                                    <td class="text-end fw-bold">@inv.TotalAmount.ToString("N0") ₫</td>
+                                    <td class="text-end text-success">@inv.PaidAmount.ToString("N0") ₫</td>
+                                    <td>
+                                        @if (inv.Status == 0) { <span class="badge badge-invoice-unpaid">Chưa trả</span> }
+                                        else if (inv.Status == 1) { <span class="badge badge-invoice-partial">Một phần</span> }
+                                        else if (inv.Status == 2) { <span class="badge badge-invoice-paid">Đã xong</span> }
+                                        else { <span class="badge badge-invoice-overdue">Quá hạn</span> }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a asp-controller="Invoices" asp-action="Details" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Lịch sử hợp đồng</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Số phòng</th>
+                                <th>Bắt đầu</th>
+                                <th>Kết thúc</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Contracts)
+                            {
+                                <tr>
+                                    <td class="ps-4">@c.RoomNumber</td>
+                                    <td>@c.StartDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@c.EndDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (c.Status == 1) { <span class="text-success small fw-bold">Hiệu lực</span> }
+                                        else { <span class="text-muted small">Đã kết thúc</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

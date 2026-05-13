@@ -1,0 +1,83 @@
+@model QuanLyPhongTro.Models.ViewModels.InvoiceEditViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa hóa đơn";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Chỉnh sửa hóa đơn #@Model.Id.ToString().Substring(0, 8).ToUpper()</h4>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Quay lại chi tiết</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="ContractId" class="form-label">Hợp đồng</label>
+                    <select asp-for="ContractId" asp-items="ViewBag.Contracts" class="form-select">
+                        <option value="">Chọn hợp đồng</option>
+                    </select>
+                    <span asp-validation-for="ContractId" class="text-danger"></span>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label asp-for="BillingMonth" class="form-label">Tháng</label>
+                    <input asp-for="BillingMonth" class="form-control" type="number" min="1" max="12" />
+                    <span asp-validation-for="BillingMonth" class="text-danger"></span>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label asp-for="BillingYear" class="form-label">Năm</label>
+                    <input asp-for="BillingYear" class="form-control" type="number" min="2000" max="2100" />
+                    <span asp-validation-for="BillingYear" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="DueDate" class="form-label">Hạn thanh toán</label>
+                    <input asp-for="DueDate" class="form-control" type="date" />
+                    <span asp-validation-for="DueDate" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Status" class="form-label">Trạng thái</label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="0">Chưa thanh toán</option>
+                        <option value="1">Thanh toán một phần</option>
+                        <option value="2">Đã thanh toán</option>
+                        <option value="3">Quá hạn</option>
+                    </select>
+                </div>
+            </div>
+
+            <h6 class="mt-4 border-bottom pb-2">Chi tiết dịch vụ</h6>
+            <div id="details-container">
+                @for (int i = 0; i < Model.Details.Count; i++)
+                {
+                    <div class="row align-items-end mb-3 border-bottom pb-3 detail-row">
+                        <div class="col-md-5">
+                            <label class="form-label">Dịch vụ</label>
+                            <select asp-for="Details[i].ServiceId" asp-items="ViewBag.Services" class="form-select">
+                                <option value="">Chọn dịch vụ</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Số lượng</label>
+                            <input asp-for="Details[i].Quantity" class="form-control" type="number" min="0" step="0.01" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Đơn giá</label>
+                            <input asp-for="Details[i].UnitPrice" class="form-control" type="number" min="0" step="1000" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <hr>
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary px-5">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

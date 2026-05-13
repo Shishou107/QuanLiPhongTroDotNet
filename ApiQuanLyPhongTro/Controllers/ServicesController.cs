@@ -1,120 +1,130 @@
-﻿using ApiQuanLyPhongTro.Entities; // Thay đổi theo Namespace thực tế của bạn
-using ApiQuanLyPhongTro.Infrastructure.Data;
+using System.Data;
+using ApiQuanLyPhongTro.Application.Common;
+using ApiQuanLyPhongTro.Application.DTO;
+using ApiQuanLyPhongTro.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 
-namespace ApiQuanLyPhongTro.Controllers
+namespace ApiQuanLyPhongTro.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ServicesController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ServicesController : ControllerBase
+    private readonly AdoNetDb _db;
+
+    public ServicesController(AdoNetDb db)
     {
-        private readonly AppDbContext _context; // Thay YourDbContext bằng tên DbContext của bạn
+        _db = db;
+    }
 
-        public ServicesController(AppDbContext context)
+    [HttpGet]
+    public IActionResult GetAll()
+    {
+        using var connection = _db.CreateConnection();
+        using var command = _db.CreateStoredProcedureCommand(connection, "sp_Services_GetAll");
+        var table = _db.FillDataTable(command);
+
+        var services = table.Rows
+            .Cast<DataRow>()
+            .Select(MapService)
+            .ToList();
+
+        return Ok(ApiResponse<object>.SuccessResult(services));
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetById(Guid id)
+    {
+        using var connection = _db.CreateConnection();
+        using var command = _db.CreateStoredProcedureCommand(connection, "sp_Services_GetById");
+        command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
+
+        var table = _db.FillDataTable(command);
+
+        if (table.Rows.Count == 0)
         {
-            _context = context;
+            return NotFound(ApiResponse.FailureResult("Khong tim thay dich vu"));
         }
 
-        // GET: api/Services
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Service>>> GetServices()
+        return Ok(ApiResponse<object>.SuccessResult(MapService(table.Rows[0])));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateServiceDto dto)
+    {
+        await using var connection = _db.CreateConnection();
+        await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Services_Create");
+
+        command.Parameters.Add("@Name", SqlDbType.NVarChar, 100).Value = dto.Name;
+        command.Parameters.Add("@Unit", SqlDbType.NVarChar, 50).Value = dto.Unit;
+        command.Parameters.Add("@DefaultPrice", SqlDbType.Decimal).Value = dto.DefaultPrice;
+        var idParameter = command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier);
+        idParameter.Direction = ParameterDirection.Output;
+
+        await connection.OpenAsync();
+        await command.ExecuteNonQueryAsync();
+
+        var id = (Guid)idParameter.Value;
+        return CreatedAtAction(nameof(GetById), new { id }, ApiResponse<Guid>.SuccessResult(id, "Tao dich vu thanh cong"));
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, CreateServiceDto dto)
+    {
+        await using var connection = _db.CreateConnection();
+        await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Services_Update");
+
+        command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
+        command.Parameters.Add("@Name", SqlDbType.NVarChar, 100).Value = dto.Name;
+        command.Parameters.Add("@Unit", SqlDbType.NVarChar, 50).Value = dto.Unit;
+        command.Parameters.Add("@DefaultPrice", SqlDbType.Decimal).Value = dto.DefaultPrice;
+
+        await connection.OpenAsync();
+        var rowsAffected = await command.ExecuteNonQueryAsync();
+
+        if (rowsAffected == 0)
         {
-            // Trả về danh sách dịch vụ sắp xếp theo tên
-            return await _context.Services.OrderBy(s => s.Name).ToListAsync();
+            return NotFound(ApiResponse.FailureResult("Khong tim thay dich vu"));
         }
 
-        // GET: api/Services/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Service>> GetService(Guid id)
+        return Ok(ApiResponse.SuccessResult("Cap nhat dich vu thanh cong"));
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
         {
-            var service = await _context.Services.FindAsync(id);
+            await using var connection = _db.CreateConnection();
+            await using var command = _db.CreateStoredProcedureCommand(connection, "sp_Services_Delete");
+            command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
 
-            if (service == null)
+            await connection.OpenAsync();
+            var rowsAffected = await command.ExecuteNonQueryAsync();
+
+            if (rowsAffected == 0)
             {
-                return NotFound(new { message = "Không tìm thấy dịch vụ!" });
+                return NotFound(ApiResponse.FailureResult("Khong tim thay dich vu"));
             }
 
-            return service;
+            return Ok(ApiResponse.SuccessResult("Da xoa dich vu"));
         }
-
-        // POST: api/Services
-        [HttpPost]
-        public async Task<ActionResult<Service>> CreateService(Service service)
+        catch (SqlException ex)
         {
-            if (service.Id == Guid.Empty)
-            {
-                service.Id = Guid.NewGuid();
-            }
-
-            service.CreatedAt = DateTime.Now;
-
-            _context.Services.Add(service);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetService), new { id = service.Id }, service);
+            return BadRequest(ApiResponse.FailureResult(ex.Message));
         }
+    }
 
-        // PUT: api/Services/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateService(Guid id, Service service)
+    private static ServiceDto MapService(DataRow row)
+    {
+        return new ServiceDto
         {
-            if (id != service.Id)
-            {
-                return BadRequest(new { message = "ID không khớp!" });
-            }
-
-            _context.Entry(service).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ServiceExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return Ok(new { message = "Cập nhật dịch vụ thành công!" });
-        }
-
-        // DELETE: api/Services/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteService(Guid id)
-        {
-            var service = await _context.Services.FindAsync(id);
-            if (service == null)
-            {
-                return NotFound();
-            }
-
-            // Kiểm tra xem dịch vụ có đang được dùng trong hóa đơn nào không trước khi xóa
-            var isBeingUsed = await _context.InvoiceDetails.AnyAsync(d => d.ServiceId == id);
-            if (isBeingUsed)
-            {
-                return BadRequest(new { message = "Không thể xóa dịch vụ này vì đã có hóa đơn sử dụng!" });
-            }
-
-            _context.Services.Remove(service);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Đã xóa dịch vụ thành công!" });
-        }
-
-        private bool ServiceExists(Guid id)
-        {
-            return _context.Services.Any(e => e.Id == id);
-        }
+            Id = row.GetGuidValue("Id"),
+            Name = row.GetStringValue("Name"),
+            Unit = row.GetStringValue("Unit"),
+            DefaultPrice = row.GetDecimalValue("DefaultPrice"),
+            IsActive = true
+        };
     }
 }

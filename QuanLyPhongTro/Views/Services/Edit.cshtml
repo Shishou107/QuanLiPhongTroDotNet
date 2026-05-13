@@ -1,0 +1,38 @@
+@model QuanLyPhongTro.Models.ViewModels.ServiceEditViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa dịch vụ";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Chỉnh sửa dịch vụ</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Unit" class="form-label"></label>
+                <input asp-for="Unit" class="form-control" placeholder="kWh, m3, tháng..." />
+                <span asp-validation-for="Unit" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="DefaultPrice" class="form-label"></label>
+                <input asp-for="DefaultPrice" class="form-control" type="number" min="0" step="1000" />
+                <span asp-validation-for="DefaultPrice" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

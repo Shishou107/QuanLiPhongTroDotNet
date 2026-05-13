@@ -1,0 +1,57 @@
+@model IEnumerable<QuanLyPhongTro.Models.ViewModels.RoomListViewModel>
+@{
+    ViewData["Title"] = "Quản lý bảo trì";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="fas fa-tools me-2 text-warning"></i>Phòng đang bảo trì</h4>
+    <span class="badge bg-warning text-dark px-3 py-2">@Model.Count() phòng</span>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Số phòng</th>
+                        <th>Tòa nhà</th>
+                        <th>Diện tích</th>
+                        <th>Giá thuê</th>
+                        <th class="text-end">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted mb-3"><i class="fas fa-check-circle fa-3x opacity-25"></i></div>
+                                <h5>Không có phòng nào đang bảo trì</h5>
+                                <p class="small text-muted">Tất cả các phòng đều sẵn sàng hoặc đang được sử dụng.</p>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="fw-bold">@item.RoomNumber</span></td>
+                            <td>@item.BuildingName</td>
+                            <td>@(item.Area?.ToString("N1") ?? "0") m²</td>
+                            <td class="fw-bold text-primary">@item.RentPrice.ToString("N0") ₫</td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info"><i class="fas fa-eye me-1"></i>Xem</a>
+                                    <form asp-action="UpdateStatus" asp-route-id="@item.Id" method="post" class="d-inline ms-1">
+                                        <input type="hidden" name="status" value="0" />
+                                        <button type="submit" class="btn btn-sm btn-success px-3">Xong bảo trì</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
